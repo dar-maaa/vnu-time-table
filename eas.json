@@ -6,14 +6,19 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.11:3000/api/v1"
+      }
     },
     "preview": {
       "distribution": "internal"
     },
     "production": {
       "autoIncrement": true,
-      "image": "macos-ventura-136-xcode-152-latest"
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://vnu-time-table.digitalidea.ua/api/v1"
+      }
     }
   },
   "submit": {

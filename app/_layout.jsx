@@ -2,14 +2,46 @@ import React, {useEffect, useState} from 'react';
 import Entypo from '@expo/vector-icons/Entypo';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
-import {Stack} from "expo-router";
+import {Stack, useNavigationContainerRef} from "expo-router";
 import {useFonts, FiraSans_400Regular, FiraSans_600SemiBold} from '@expo-google-fonts/fira-sans';
 import * as Notifications from "expo-notifications";
 import {RootSiblingParent} from 'react-native-root-siblings';
 import * as Sentry from "@sentry/react-native";
+import * as Updates from 'expo-updates';
+
+const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
+const manifest = Updates.manifest;
+const metadata = 'metadata' in manifest ? manifest.metadata : undefined;
+const extra = 'extra' in manifest ? manifest.extra : undefined;
+const updateGroup = metadata && 'updateGroup' in metadata ? metadata.updateGroup : undefined;
 
 Sentry.init({
+    // debug: true,
     dsn: 'https://7e10351f65f9a2942d85ca8923cb59ac@o1078061.ingest.sentry.io/4506823558430720',
+    integrations: [
+        new Sentry.ReactNativeTracing({
+            routingInstrumentation,
+        }),
+    ],
+});
+
+Sentry.configureScope(scope => {
+    scope.setTag('expo-update-id', Updates.updateId);
+    scope.setTag('expo-is-embedded-update', Updates.isEmbeddedLaunch);
+
+    if (typeof updateGroup === 'string') {
+        scope.setTag('expo-update-group-id', updateGroup);
+
+        const owner = extra?.expoClient?.owner ?? '[account]';
+        const slug = extra?.expoClient?.slug ?? '[project]';
+        scope.setTag(
+            'expo-update-debug-url',
+            `https://expo.dev/accounts/${owner}/projects/${slug}/updates/${updateGroup}`
+        );
+    } else if (Updates.isEmbeddedLaunch) {
+        // This will be `true` if the update is the one embedded in the build, and not one downloaded from the updates server.
+        scope.setTag('expo-update-debug-url', 'not applicable for embedded updates');
+    }
 });
 
 Notifications.setNotificationHandler({
@@ -20,18 +52,24 @@ Notifications.setNotificationHandler({
     }),
 });
 
-// todo: Async storage for storing data https://react-native-async-storage.github.io/async-storage/docs/usage/
-
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-export default function Layout() {
+function Layout() {
+    // Capture the NavigationContainer ref and register it with the instrumentation.
+    const ref = useNavigationContainerRef();
     const [appIsReady, setAppIsReady] = useState(false);
 
     let [fontsLoaded, fontError] = useFonts({
         FiraSans_400Regular,
         FiraSans_600SemiBold,
     });
+
+    useEffect(() => {
+        if (ref) {
+            routingInstrumentation.registerNavigationContainer(ref);
+        }
+    }, [ref]);
 
     useEffect(() => {
         async function prepare() {
@@ -86,3 +124,6 @@ export default function Layout() {
         </RootSiblingParent>
     );
 }
+
+// Wrap the Root Layout route component with `Sentry.wrap` to capture gesture info and profiling data.
+export default Sentry.wrap(Layout);
