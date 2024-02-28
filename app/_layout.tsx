@@ -107,16 +107,16 @@ function Layout() {
     return (
         <RootSiblingParent>
             <Stack
-                // https://reactnavigation.org/docs/headers#sharing-common-options-across-screens
-                screenOptions={{
-                    headerStyle: {
-                        backgroundColor: '#A41A34',
-                    },
-                    headerTintColor: '#fff',
-                    headerTitleStyle: {
-                        fontWeight: 'bold',
-                    },
-                }}
+              // https://reactnavigation.org/docs/headers#sharing-common-options-across-screens
+              screenOptions={{
+                  headerStyle: {
+                      backgroundColor: '#A41A34',
+                  },
+                  headerTintColor: '#fff',
+                  headerTitleStyle: {
+                      fontWeight: 'bold',
+                  },
+              }}
             >
                 {/* Optionally configure static options outside the route. */}
                 <Stack.Screen name="index" options={{}}/>
