@@ -12,7 +12,8 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "image": "macos-ventura-136-xcode-152-latest"
     }
   },
   "submit": {
