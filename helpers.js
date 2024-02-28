@@ -35,6 +35,8 @@ export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ4
 // export const API_URL = 'http://192.168.1.11:3000/api/v1';
 
 export const API_URL = 'https://vnu-time-table.digitalidea.ua/api/v1';
+// export const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// console.log('API_URL', API_URL);
 
 export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
 

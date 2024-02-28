@@ -44,8 +44,6 @@
       [
         "@sentry/react-native/expo",
         {
-          "url": "https://sentry.io/",
-          "note": "Use SENTRY_AUTH_TOKEN env to authenticate with Sentry.",
           "project": "vnu-time-table",
           "organization": "digital-idea"
         }
@@ -54,6 +52,12 @@
     "locales": {
       "en": "./languages/en.json",
       "uk": "./languages/uk.json"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3f9b531e-d032-4853-9a94-71f368e7fed8"
     }
   }
 }
