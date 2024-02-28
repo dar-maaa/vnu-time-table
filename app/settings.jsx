@@ -18,6 +18,7 @@ import * as Localization from "expo-localization";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 
+
 /**
  * @typedef {Object} StudentSettings
  * @property {string} expoPushToken
@@ -126,7 +127,6 @@ export default function SettingsPage() {
                         projectId: Constants.expoConfig.extra.eas.projectId,
                     });
 
-                    console.log(`Got token: ${token.data}`)
                     setExpoPushToken(token.data);
                 } catch (e) {
                     Alert.alert(i18n.t('push_notifications_permission.title'), i18n.t('push_notifications_permission.message'), [

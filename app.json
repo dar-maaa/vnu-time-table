@@ -40,7 +40,16 @@
     "owner": "digital-idea",
     "plugins": [
       "expo-router",
-      "expo-localization"
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "note": "Use SENTRY_AUTH_TOKEN env to authenticate with Sentry.",
+          "project": "vnu-time-table",
+          "organization": "digital-idea"
+        }
+      ]
     ],
     "locales": {
       "en": "./languages/en.json",

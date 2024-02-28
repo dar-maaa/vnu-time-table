@@ -6,6 +6,11 @@ import {Stack} from "expo-router";
 import {useFonts, FiraSans_400Regular, FiraSans_600SemiBold} from '@expo-google-fonts/fira-sans';
 import * as Notifications from "expo-notifications";
 import {RootSiblingParent} from 'react-native-root-siblings';
+import * as Sentry from "@sentry/react-native";
+
+Sentry.init({
+    dsn: 'https://7e10351f65f9a2942d85ca8923cb59ac@o1078061.ingest.sentry.io/4506823558430720',
+});
 
 Notifications.setNotificationHandler({
     handleNotification: async () => ({

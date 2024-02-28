@@ -6,7 +6,7 @@ import {fetchTimetable, getSetting} from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
-import {Table, Rows} from 'react-native-table-component';
+import {Table, Rows} from 'react-native-reanimated-table';
 
 function HeaderTitle(props) {
     return <View style={styles.headerTitle}>
@@ -34,10 +34,11 @@ export default function IndexPage() {
     /** @type {[number | null, React.Dispatch<React.SetStateAction<number | null>>]} */
     const [userGroupId, setUserGroupId] = useState(null);
 
-    async function fetchData() {
+    async function fetchData(groupId) {
         setLoading(true);
 
-        const data = await fetchTimetable(userGroupId, selectedDate);
+        console.log('fetchData', groupId, selectedDate);
+        const data = await fetchTimetable(groupId, selectedDate);
 
         setTable(data);
         setLoading(false);
@@ -46,13 +47,16 @@ export default function IndexPage() {
     useEffect(() => {
         async function prepare() {
             const group = await getSetting('group');
-            const isFirstRun = await getSetting('isFirstRun', !group?.key);
+            const isFirstRun = await getSetting('isFirstRun', !group?.id);
+
+            console.log('isFirstRun', isFirstRun);
+            console.log('group', group);
 
             setIsFirstRun(isFirstRun);
 
             if (!isFirstRun) {
                 setUserGroupId(group.id);
-                await fetchData();
+                await fetchData(group.id);
             }
 
             setAppIsReady(true);
@@ -62,8 +66,12 @@ export default function IndexPage() {
     }, []);
 
     useEffect(() => {
-        fetchData();
-    }, [selectedDate]);
+        if (!userGroupId) {
+            return;
+        }
+
+        fetchData(userGroupId);
+    }, [selectedDate, userGroupId]);
 
     if (!appIsReady) {
         return null;
@@ -112,35 +120,37 @@ export default function IndexPage() {
                         }}
                     />
                 </View>
-                <CalendarStrip
-                    minDate={minDate}
-                    maxDate={maxDate}
-                    scrollable
-                    startingDate={moment()}
-                    selectedDate={selectedDate}
-                    onDateSelected={setSelectedDate}
-                    style={styles.calendar}
-                    dateNumberStyle={{color: '#000'}}
-                    dateNameStyle={{color: '#000'}}
-                    highlightDateNumberStyle={{color: '#A41A34'}}
-                    highlightDateNameStyle={{color: '#A41A34'}}
-                    disabledDateNameStyle={{color: 'grey'}}
-                    disabledDateNumberStyle={{color: 'grey'}}
-                    datesWhitelist={datesWhitelist}
-                    // calendarAnimation={{
-                    //     type: 'sequence',
-                    //     duration: 30,
-                    // }}
-                    // daySelectionAnimation={{
-                    //     type: 'border',
-                    //     duration: 300,
-                    //     borderHighlightColor: '#A41A34',
-                    //     borderWidth: 2,
-                    //     animType: 'spring',
-                    //     animUpdateType: 'scale',
-                    //     animProperty: 'opacity',
-                    // }}
-                />
+                <View>
+                    <CalendarStrip
+                        minDate={minDate}
+                        maxDate={maxDate}
+                        scrollable
+                        startingDate={moment()}
+                        selectedDate={selectedDate}
+                        onDateSelected={setSelectedDate}
+                        style={styles.calendar}
+                        dateNumberStyle={{color: '#000'}}
+                        dateNameStyle={{color: '#000'}}
+                        highlightDateNumberStyle={{color: '#A41A34'}}
+                        highlightDateNameStyle={{color: '#A41A34'}}
+                        disabledDateNameStyle={{color: 'grey'}}
+                        disabledDateNumberStyle={{color: 'grey'}}
+                        datesWhitelist={datesWhitelist}
+                        // calendarAnimation={{
+                        //     type: 'sequence',
+                        //     duration: 30,
+                        // }}
+                        // daySelectionAnimation={{
+                        //     type: 'border',
+                        //     duration: 300,
+                        //     borderHighlightColor: '#A41A34',
+                        //     borderWidth: 2,
+                        //     animType: 'spring',
+                        //     animUpdateType: 'scale',
+                        //     animProperty: 'opacity',
+                        // }}
+                    />
+                </View>
                 {
                     table.length ?
                         <View style={styles.contentContainer}>
@@ -180,10 +190,10 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
     },
     calendar: {
-        height: 150,
+        height: 120,
         paddingTop: 20,
         paddingBottom: 10,
-        paddingHorizontal: 15,
+        paddingHorizontal: 5,
     },
     contentContainer: {
         paddingHorizontal: 15,
