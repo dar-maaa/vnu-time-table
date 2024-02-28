@@ -1,14 +1,14 @@
 import {Redirect, Stack, router} from 'expo-router';
 import {Button, StyleSheet, Text, View, ActivityIndicator} from 'react-native';
 import {i18n} from "../i18n";
-import {useEffect, useState} from "react";
-import {fetchTimetable, getSetting} from "../helpers";
+import {JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
+import { fetchTimetable, getSetting, Group } from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
-import {Table, Rows} from 'react-native-reanimated-table';
+import { Table, Rows } from 'react-native-reanimated-table';
 
-function HeaderTitle(props) {
+function HeaderTitle(props: { children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }) {
     return <View style={styles.headerTitle}>
         <Text style={styles.headerLabel}>{props.children}</Text>
         <Entypo name="cog" size={20} style={styles.headerIcon} onPress={() => router.push('settings')}/>
@@ -16,25 +16,14 @@ function HeaderTitle(props) {
 }
 
 export default function IndexPage() {
-    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
-    const [isFirstRun, setIsFirstRun] = useState(true);
+    const [isFirstRun, setIsFirstRun] = useState<boolean>(true);
+    const [appIsReady, setAppIsReady] = useState<boolean>(false);
+    const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
+    const [table, setTable] = useState<string[][]>([]);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [userGroupId, setUserGroupId] = useState<number | null>(null);
 
-    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
-    const [appIsReady, setAppIsReady] = useState(false);
-
-    /** @type {[moment.Moment, React.Dispatch<React.SetStateAction<moment.Moment>>]} */
-    const [selectedDate, setSelectedDate] = useState(moment());
-
-    /** @type {[Timetable[], React.Dispatch<React.SetStateAction<Timetable[]>>]} */
-    const [table, setTable] = useState([]);
-
-    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
-    const [loading, setLoading] = useState(true);
-
-    /** @type {[number | null, React.Dispatch<React.SetStateAction<number | null>>]} */
-    const [userGroupId, setUserGroupId] = useState(null);
-
-    async function fetchData(groupId) {
+    async function fetchData(groupId: number) {
         setLoading(true);
 
         console.log('fetchData', groupId, selectedDate);
@@ -46,15 +35,15 @@ export default function IndexPage() {
 
     useEffect(() => {
         async function prepare() {
-            const group = await getSetting('group');
-            const isFirstRun = await getSetting('isFirstRun', !group?.id);
+            const group = await getSetting<Group>('group');
+            const isFirstRun = await getSetting<boolean>('isFirstRun', !group?.id) || true;
 
             console.log('isFirstRun', isFirstRun);
             console.log('group', group);
 
             setIsFirstRun(isFirstRun);
 
-            if (!isFirstRun) {
+            if (!isFirstRun && group?.id) {
                 setUserGroupId(group.id);
                 await fetchData(group.id);
             }

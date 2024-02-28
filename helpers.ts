@@ -5,30 +5,27 @@ import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from "react-native-root-toast";
 import {i18n} from "./i18n";
+import { Moment } from "moment";
 
-// Define JSDoc types
-/**
- * @typedef {Object} Faculty
- * @property {string} createdAt
- * @property {number} id
- * @property {string} name
- * @property {string} refKey
- */
+export interface Faculty {
+    createdAt: string;
+    id: number;
+    name: string;
+    refKey: string;
+}
 
-/**
- * @typedef {Object} Group
- * @property {string} createdAt
- * @property {number} id
- * @property {string} name
- * @property {string} refKey
- */
+export interface Group {
+    createdAt: string;
+    id: number;
+    name: string;
+    refKey: string;
+}
 
-/**
- * @typedef {Object} Timetable
- * @property {string} number
- * @property {string} time
- * @property {string} subject
- */
+export interface Timetable {
+    number: string;
+    time: string;
+    subject: string;
+}
 
 export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
 
@@ -77,22 +74,26 @@ export async function registerForPushNotificationsAsync() {
         // Learn more about projectId:
         // https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
         token = await Notifications.getExpoPushTokenAsync({
-            projectId: Constants.expoConfig.extra.eas.projectId,
+            projectId: Constants.expoConfig?.extra?.eas?.projectId,
         });
         console.log(token.data);
     } else {
         alert('Must use physical device for Push Notifications');
     }
 
-    return token.data;
+    return token?.data;
 }
 
-export async function getSetting(key, defaultValue = null) {
+export async function getSetting<T>(key: string, defaultValue: T | null = null): Promise<T | null> {
     let value = null;
 
     try {
         value = await AsyncStorage.getItem(key);
     } catch (e) {
+    }
+
+    if (value === null) {
+        return value
     }
 
     try {
@@ -105,7 +106,7 @@ export async function getSetting(key, defaultValue = null) {
     return value;
 }
 
-export async function setSetting(key, value) {
+export async function setSetting<T>(key: string, value: T) {
     const serializedValue = JSON.stringify(value);
 
     if (value === null || value === undefined) {
@@ -126,7 +127,7 @@ export async function clearSettings() {
  * @param {string} date
  * @return {Promise<string[][]>}
  */
-export async function fetchTimetable(groupId, date) {
+export async function fetchTimetable(groupId: number, date: Moment): Promise<string[][]> {
     return fetch(`${API_URL}/timetables`, {
         method: 'POST',
         headers: {
@@ -148,7 +149,7 @@ export async function fetchTimetable(groupId, date) {
 
                 throw new Error(response.message);
             }
-            return Object.values(response).map(v => [v.number, v.time, v.subject || ''])
+            return Object.values<Timetable>(response).map(v => [v.number, v.time, v.subject || ''])
         })
         .catch(e => {
             showErrorMessage(e.message);
@@ -156,16 +157,17 @@ export async function fetchTimetable(groupId, date) {
         });
 }
 
-export function showErrorMessage(message) {
+export function showErrorMessage(message: string) {
     Toast.show(message, {
         duration: Toast.durations.LONG,
+        position: Toast.positions.BOTTOM,
         keyboardAvoiding: true,
         textStyle: {color: 'white'},
         backgroundColor: '#A41A34',
     });
 }
 
-export function showSuccessMessage(message) {
+export function showSuccessMessage(message: string) {
     Toast.show(message, {
         duration: Toast.durations.LONG,
         keyboardAvoiding: true,

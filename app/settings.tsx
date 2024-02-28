@@ -4,8 +4,8 @@ import React, {useEffect, useState} from "react";
 import {
     API_URL, APP_API_TOKEN,
     clearSettings,
-    CORPORATE_EMAIL_DOMAIN,
-    getSetting,
+    CORPORATE_EMAIL_DOMAIN, Faculty,
+    getSetting, Group,
     registerForPushNotificationsAsync,
     setSetting,
     showErrorMessage,
@@ -17,55 +17,47 @@ import {i18n} from "../i18n";
 import * as Localization from "expo-localization";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import Toast from "react-native-root-toast";
 
+interface StudentSettings {
+    expoPushToken: string;
+    year: number;
+    email: string;
+    facultyId: number;
+    groupId: number;
+    locale: string;
+    deviceLocale: string | null;
+}
 
-/**
- * @typedef {Object} StudentSettings
- * @property {string} expoPushToken
- * @property {number} year
- * @property {string} email
- * @property {number} facultyId
- * @property {number} groupId
- * @property {string} locale
- * @property {string} deviceLocale
- */
+interface StudentSettingsDB extends StudentSettings {
+    id: number;
+}
 
-/**
- * @typedef {StudentSettings} StudentSettingsDB
- * @property {number} id
- */
+interface StudentSettingsResponse {
+    student: StudentSettingsDB;
+}
+
+interface ApiError {
+    message: string | string[];
+}
 
 export default function SettingsPage() {
-    /** @type {[number, React.Dispatch<React.SetStateAction<number>>]} */
-    const [studentId, setStudentId] = useState(null);
-
-    /** @type {[Faculty, React.Dispatch<React.SetStateAction<Faculty>>]} */
-    const [faculty, setFaculty] = useState({key: "0", label: ''});
-
-    /** @type {[Faculty[], React.Dispatch<React.SetStateAction<Faculty[]>>]} */
-    const [faculties, setFaculties] = useState([]);
-
-    /** @type {[number, React.Dispatch<React.SetStateAction<number>>]} */
-    const [year, setYear] = useState(1);
-
-    /** @type {[Group[], React.Dispatch<React.SetStateAction<Group[]>>]} */
-    const [groups, setGroups] = useState([]);
-
-    /** @type {[Group, React.Dispatch<React.SetStateAction<Group>>]} */
-    const [group, setGroup] = useState(null);
-
-    /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} */
-    const [email, setEmail] = useState('');
-
-    /** @type {[string, React.Dispatch<React.SetStateAction<string>>]} */
-    const [expoPushToken, setExpoPushToken] = useState('');
-
-    /** @type {[number, React.Dispatch<React.SetStateAction<number>>]} */
-    const [tapsCount, setTapsCount] = useState(0);
+    const [studentId, setStudentId] = useState<number | null>(null);
+    const [faculty, setFaculty] = useState<Faculty | null>(null);
+    const [faculties, setFaculties] = useState<Faculty[]>([]);
+    const [year, setYear] = useState<number | null>(1);
+    const [groups, setGroups] = useState<Group[]>([]);
+    const [group, setGroup] = useState<Group | null>(null);
+    const [email, setEmail] = useState<string | null>('');
+    const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
+    const [tapsCount, setTapsCount] = useState<number>(0);
 
     const [lastTapTime, setLastTapTime] = useState(0);
 
-    const isValid = email?.length > 0 && faculty?.key !== "0" && year > 0 && group !== null;
+    const isValid = (typeof email === 'string' && email?.length > 0)
+      && faculty?.id
+      && (typeof year === 'number' && year > 0)
+      && group?.id;
 
     useEffect(() => {
         async function fetchData() {
@@ -93,25 +85,22 @@ export default function SettingsPage() {
                     showErrorMessage(error.message);
                 });
 
-            /** @type {string} */
-            const savedEmail = await getSetting('email');
+            const savedEmail = await getSetting<string>('email');
             setEmail(savedEmail);
 
-            /** @type {Faculty} */
-            const savedFaculty = await getSetting('faculty', 0);
+            const savedFaculty = await getSetting<Faculty>('faculty', null);
             setFaculty(savedFaculty);
 
-            /** @type {number} */
-            const savedYear = await getSetting('year', 1);
+            const savedYear = await getSetting<number>('year', 1);
             setYear(savedYear);
 
-            /** @type {string} */
-            const savedGroup = await getSetting('group');
-            setGroups([savedGroup]);
+            const savedGroup = await getSetting<Group>('group');
+            if (savedGroup) {
+                setGroups([savedGroup]);
+            }
             setGroup(savedGroup);
 
-            /** @type {number} */
-            const savedStudentId = await getSetting('studentId');
+            const savedStudentId = await getSetting<number>('studentId');
             setStudentId(savedStudentId);
         }
 
@@ -124,7 +113,7 @@ export default function SettingsPage() {
             onLayout={async () => {
                 try {
                     const token = await Notifications.getExpoPushTokenAsync({
-                        projectId: Constants.expoConfig.extra.eas.projectId,
+                        projectId: Constants.expoConfig?.extra?.eas?.projectId,
                     });
 
                     setExpoPushToken(token.data);
@@ -156,6 +145,7 @@ export default function SettingsPage() {
                 if (now - lastTapTime < 2000) {
                     // If tapped on view
                     // noinspection JSUnresolvedReference
+                    // @ts-ignore
                     if (e.target?.viewConfig?.uiViewClassName === 'RCTView') {
                         setTapsCount(tapsCount + 1);
 
@@ -198,7 +188,7 @@ export default function SettingsPage() {
                 <TextInput
                     style={styles.input}
                     placeholder={i18n.t('enter_your_email')}
-                    value={email}
+                    value={email || undefined}
                     onChangeText={setEmail}
                     keyboardType="email-address"
                 />
@@ -232,9 +222,8 @@ export default function SettingsPage() {
                     minimumValue={1}
                     maximumValue={5}
                     step={1}
-                    value={year}
+                    value={year || undefined}
                     onValueChange={setYear}
-                    renderStepNumber={true}
                     minimumTrackTintColor="#A41A34"
                     maximumTrackTintColor="#000000"
                 />
@@ -264,14 +253,13 @@ export default function SettingsPage() {
             </View>
 
             <Button
-                style={styles.button}
                 title={i18n.t('save_settings')}
                 disabled={!isValid}
                 onPress={async () => {
                     /* Validate email, if invalid, show error message */
 
                     //  1. The Email should have CORPORATE_EMAIL_DOMAIN as domain
-                    if (!email.endsWith(`@${CORPORATE_EMAIL_DOMAIN}`)) {
+                    if (!email?.endsWith(`@${CORPORATE_EMAIL_DOMAIN}`)) {
                         showErrorMessage(i18n.t('invalid_corporate_email', {corporate_domain: CORPORATE_EMAIL_DOMAIN}));
                         return;
                     }
@@ -283,28 +271,26 @@ export default function SettingsPage() {
                     }
 
                     await setSetting('faculty', faculty);
-                    await setSetting('year', +year);
+                    await setSetting('year', year || 0);
                     await setSetting('group', group);
                     await setSetting('isFirstRun', false);
                     await setSetting('email', email);
 
-                    /** @type {StudentSettings|StudentSettingsDB} */
-                    const payload = {
-                        expoPushToken,
-                        year: +year,
+                    const payload: StudentSettings | StudentSettingsDB = {
+                        expoPushToken: expoPushToken || "",
+                        year: year || 1,
                         email: email,
-                        facultyId: faculty.id,
-                        groupId: group.id,
+                        facultyId: faculty?.id || 0,
+                        groupId: group?.id || 0,
                         locale: i18n.locale,
                         deviceLocale: Localization.getLocales()[0].languageCode,
                     }
 
                     if (studentId) {
-                        payload.id = studentId;
+                        (payload as StudentSettingsDB).id = studentId;
                     }
 
                     try {
-                        /** @type {StudentSettingsDB} */
                         const student = await fetch(`${API_URL}/students`, {
                             method: studentId ? 'PUT' : 'POST',
                             headers: {
@@ -313,14 +299,14 @@ export default function SettingsPage() {
                             },
                             body: JSON.stringify(payload),
                         })
-                            .then(response => response.json())
+                            .then(response => response.json() as Promise<StudentSettingsResponse | ApiError>)
                             .then(response => {
-                                if (response?.message) {
+                                if ('message' in response) {
                                     const message = Array.isArray(response.message) ? response.message : [response.message];
                                     throw new Error(message.join('\n'));
                                 }
 
-                                return response?.student || response;
+                                return response?.student;
                             })
 
                         await setSetting('studentId', student.id);
@@ -332,7 +318,7 @@ export default function SettingsPage() {
                         } else {
                             router.replace('/');
                         }
-                    } catch (e) {
+                    } catch (e: any) {
                         showErrorMessage(e.message);
                     }
                 }}
