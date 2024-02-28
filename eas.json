@@ -18,6 +18,12 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vnu-time-table.digitalidea.ua/api/v1"
+      },
+      "ios": {
+        "image": "latest"
+      },
+      "android": {
+        "image": "latest"
       }
     }
   },
