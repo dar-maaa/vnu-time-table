@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "vnu-time-table",
+    "name": "VNU Time Table",
     "slug": "vnu-time-table",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "scheme": "vnu-time-table",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -15,7 +16,11 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.digitalidea.vnutimetable",
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +29,22 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3f9b531e-d032-4853-9a94-71f368e7fed8"
+      }
+    },
+    "owner": "digital-idea",
+    "plugins": [
+      "expo-router",
+      "expo-localization"
+    ],
+    "locales": {
+      "en": "./languages/en.json",
+      "uk": "./languages/uk.json"
     }
   }
 }

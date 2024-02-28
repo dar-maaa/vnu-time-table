@@ -1,0 +1,195 @@
+import {Redirect, Stack, router} from 'expo-router';
+import {Button, StyleSheet, Text, View, ActivityIndicator} from 'react-native';
+import {i18n} from "../i18n";
+import {useEffect, useState} from "react";
+import {fetchTimetable, getSetting} from "../helpers";
+import Entypo from "@expo/vector-icons/Entypo";
+import CalendarStrip from 'react-native-calendar-strip';
+import moment from 'moment/min/moment-with-locales';
+import {Table, Rows} from 'react-native-table-component';
+
+function HeaderTitle(props) {
+    return <View style={styles.headerTitle}>
+        <Text style={styles.headerLabel}>{props.children}</Text>
+        <Entypo name="cog" size={20} style={styles.headerIcon} onPress={() => router.push('settings')}/>
+    </View>;
+}
+
+export default function IndexPage() {
+    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
+    const [isFirstRun, setIsFirstRun] = useState(true);
+
+    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
+    const [appIsReady, setAppIsReady] = useState(false);
+
+    /** @type {[moment.Moment, React.Dispatch<React.SetStateAction<moment.Moment>>]} */
+    const [selectedDate, setSelectedDate] = useState(moment());
+
+    /** @type {[Timetable[], React.Dispatch<React.SetStateAction<Timetable[]>>]} */
+    const [table, setTable] = useState([]);
+
+    /** @type {[boolean, React.Dispatch<React.SetStateAction<boolean>>]} */
+    const [loading, setLoading] = useState(true);
+
+    /** @type {[number | null, React.Dispatch<React.SetStateAction<number | null>>]} */
+    const [userGroupId, setUserGroupId] = useState(null);
+
+    async function fetchData() {
+        setLoading(true);
+
+        const data = await fetchTimetable(userGroupId, selectedDate);
+
+        setTable(data);
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        async function prepare() {
+            const group = await getSetting('group');
+            const isFirstRun = await getSetting('isFirstRun', !group?.key);
+
+            setIsFirstRun(isFirstRun);
+
+            if (!isFirstRun) {
+                setUserGroupId(group.id);
+                await fetchData();
+            }
+
+            setAppIsReady(true);
+        }
+
+        prepare();
+    }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [selectedDate]);
+
+    if (!appIsReady) {
+        return null;
+    }
+
+    moment.locale(i18n.locale);
+
+    const minDate = moment().subtract(1, 'month');
+    const maxDate = moment().add(1, 'month');
+
+    const datesWhitelist = [{
+        start: minDate,
+        end: maxDate,
+    }];
+
+    return (
+        isFirstRun ? <Redirect href="settings"/> :
+            <View>
+                <Stack.Screen
+                    options={{
+                        // https://reactnavigation.org/docs/headers#setting-the-header-title
+                        title: i18n.t('calendar'),
+                        // https://reactnavigation.org/docs/headers#adjusting-header-styles
+                        headerStyle: {backgroundColor: '#A41A34'},
+                        headerTintColor: '#fff',
+                        headerTitleStyle: {
+                            fontWeight: 'bold',
+                        },
+                        // https://reactnavigation.org/docs/headers#replacing-the-title-with-a-custom-component
+                        headerTitle: props => <HeaderTitle {...props} />,
+                    }}
+                />
+                <View style={styles.quickButtonsContainer}>
+                    <Button
+                        title={i18n.t('today')}
+                        color={'#A41A34'}
+                        onPress={() => {
+                            setSelectedDate(moment());
+                        }}
+                    />
+                    <Button
+                        title={i18n.t('tomorrow')}
+                        color={'#A41A34'}
+                        onPress={() => {
+                            setSelectedDate(moment().add(1, 'day'));
+                        }}
+                    />
+                </View>
+                <CalendarStrip
+                    minDate={minDate}
+                    maxDate={maxDate}
+                    scrollable
+                    startingDate={moment()}
+                    selectedDate={selectedDate}
+                    onDateSelected={setSelectedDate}
+                    style={styles.calendar}
+                    dateNumberStyle={{color: '#000'}}
+                    dateNameStyle={{color: '#000'}}
+                    highlightDateNumberStyle={{color: '#A41A34'}}
+                    highlightDateNameStyle={{color: '#A41A34'}}
+                    disabledDateNameStyle={{color: 'grey'}}
+                    disabledDateNumberStyle={{color: 'grey'}}
+                    datesWhitelist={datesWhitelist}
+                    // calendarAnimation={{
+                    //     type: 'sequence',
+                    //     duration: 30,
+                    // }}
+                    // daySelectionAnimation={{
+                    //     type: 'border',
+                    //     duration: 300,
+                    //     borderHighlightColor: '#A41A34',
+                    //     borderWidth: 2,
+                    //     animType: 'spring',
+                    //     animUpdateType: 'scale',
+                    //     animProperty: 'opacity',
+                    // }}
+                />
+                {
+                    table.length ?
+                        <View style={styles.contentContainer}>
+                            <Table borderStyle={{borderWidth: 1, borderColor: '#A41A34'}}>
+                                <Rows data={table} textStyle={styles.text} widthArr={[30, 70, 300]}/>
+                            </Table>
+                        </View> :
+                        loading ?
+                            <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
+                            <Text style={{textAlign: 'center', fontSize: 16, marginTop: 122}}>{i18n.t('no_data')}</Text>
+                }
+            </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    headerTitle: {
+        display: 'flex',
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerLabel: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: 'white',
+    },
+    headerIcon: {
+        color: 'white',
+        position: 'absolute',
+        right: 45,
+    },
+    quickButtonsContainer: {
+        paddingHorizontal: 15,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'space-between',
+    },
+    calendar: {
+        height: 150,
+        paddingTop: 20,
+        paddingBottom: 10,
+        paddingHorizontal: 15,
+    },
+    contentContainer: {
+        paddingHorizontal: 15,
+    },
+    text: {
+        margin: 6,
+        textAlign: 'center',
+    }
+});
