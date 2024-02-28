@@ -1,0 +1,38 @@
+{
+  "CFBundleDisplayName": "VNU Timetables",
+  "NSNotificationsUsageDescription": "Receive notifications about timetable changes",
+  "settings": "Settings",
+  "your_email": "Your email",
+  "enter_your_email": "Enter your corporate email",
+  "invalid_corporate_email": "Invalid corporate email. It should end with @%{corporate_domain}",
+  "invalid_email": "Invalid email format",
+  "select_a_faculty": "Select faculty",
+  "your_faculty": "Your faculty:",
+  "your_year": "Your year: %{year}",
+  "your_group": "Your group",
+  "select_a_group": "Type your group",
+  "save_settings": "Save settings",
+  "settings_saved": "Settings saved",
+  "timetable": "Timetables",
+  "calendar": "Calendar",
+  "current_locale": "Current locale:",
+  "timetable_details": "Timetable for %{date}",
+  "today": "Today",
+  "tomorrow": "Tomorrow",
+  "loading": "Loading...",
+  "no_data": "No data",
+  "reset_settings_warning": {
+    "title": "Reset settings",
+    "message": "Are you sure you want to reset your settings?",
+    "cancel": "Cancel",
+    "confirm": "Reset",
+    "confirmed": "Settings reset"
+  },
+  "push_notifications_permission": {
+    "title": "Push notifications",
+    "message": "We need your permission to send you notifications about timetable changes",
+    "cancel": "Cancel",
+    "allow": "Allow",
+    "denied": "You have denied the permission to send notifications. You can change this in the settings"
+  }
+}

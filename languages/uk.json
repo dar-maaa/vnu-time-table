@@ -1,0 +1,38 @@
+{
+  "CFBundleDisplayName": "Розклад ВНУ",
+  "NSNotificationsUsageDescription": "Сповіщення про зміни в розкладі",
+  "settings": "Налаштування",
+  "your_email": "Корпоративна пошта:",
+  "enter_your_email": "Введіть вашу корпоративну пошту",
+  "invalid_corporate_email": "Пошта повинна закінчуватись на @%{corporate_domain}",
+  "invalid_email": "Невірний формат електронної пошти",
+  "select_a_faculty": "Виберіть факультет",
+  "your_faculty": "Ваш факультет:",
+  "your_year": "Ваш курс: %{year}",
+  "your_group": "Ваша група:",
+  "select_a_group": "Введіть назву групи для пошуку",
+  "save_settings": "Зберегти налаштування",
+  "settings_saved": "Налаштування збережено",
+  "timetable": "Розклад занять",
+  "calendar": "Календар",
+  "current_locale": "Поточна локаль:",
+  "timetable_details": "Розклад на %{date}",
+  "today": "Сьогодні",
+  "tomorrow": "Завтра",
+  "loading": "Завантаження...",
+  "no_data": "Немає даних",
+  "reset_settings_warning": {
+    "title": "Скидання налаштувань",
+    "message": "Ви впевнені, що хочете скинути налаштування?",
+    "cancel": "Скасувати",
+    "confirm": "Підтвердити",
+    "confirmed": "Налаштування скинуті"
+  },
+  "push_notifications_permission": {
+    "title": "Сповіщення",
+    "message": "Нам потрібно дозвіл на сповіщення про зміни в розкладі",
+    "cancel": "Відмінити",
+    "allow": "Дозволити",
+    "denied": "Ви відмовили в дозволі на сповіщення. Ви можете змінити це в налаштуваннях"
+  }
+}
