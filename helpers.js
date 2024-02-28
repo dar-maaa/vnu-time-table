@@ -32,9 +32,9 @@ import {i18n} from "./i18n";
 
 export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
 
-export const API_URL = 'http://192.168.1.11:3000/api/v1';
+// export const API_URL = 'http://192.168.1.11:3000/api/v1';
 
-// export const API_URL = 'https://vnu-time-table.digitalidea.ua/api/v1';
+export const API_URL = 'https://vnu-time-table.digitalidea.ua/api/v1';
 
 export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
 
