@@ -15,9 +15,7 @@ import {Dropdown} from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
 import {i18n} from "../i18n";
 import * as Localization from "expo-localization";
-import * as Notifications from "expo-notifications";
-import Constants from "expo-constants";
-import Toast from "react-native-root-toast";
+import { Checkbox } from "expo-checkbox";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -27,6 +25,7 @@ interface StudentSettings {
     groupId: number;
     locale: string;
     deviceLocale: string | null;
+    enableNotifications: boolean;
 }
 
 interface StudentSettingsDB extends StudentSettings {
@@ -45,18 +44,19 @@ export default function SettingsPage() {
     const [studentId, setStudentId] = useState<number | null>(null);
     const [faculty, setFaculty] = useState<Faculty | null>(null);
     const [faculties, setFaculties] = useState<Faculty[]>([]);
-    const [year, setYear] = useState<number | null>(1);
+    const [year, setYear] = useState<number>(1);
     const [groups, setGroups] = useState<Group[]>([]);
     const [group, setGroup] = useState<Group | null>(null);
-    const [email, setEmail] = useState<string | null>('');
+    const [email, setEmail] = useState<string>('');
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
     const [tapsCount, setTapsCount] = useState<number>(0);
+    const [enableNotifications, setEnableNotifications] = useState<boolean>(false);
 
     const [lastTapTime, setLastTapTime] = useState(0);
 
-    const isValid = (typeof email === 'string' && email?.length > 0)
+    const isValid = email?.length > 0
       && faculty?.id
-      && (typeof year === 'number' && year > 0)
+      && year > 0
       && group?.id;
 
     useEffect(() => {
@@ -86,13 +86,19 @@ export default function SettingsPage() {
                 });
 
             const savedEmail = await getSetting<string>('email');
-            setEmail(savedEmail);
+
+            if (savedEmail) {
+                setEmail(savedEmail);
+            }
 
             const savedFaculty = await getSetting<Faculty>('faculty', null);
             setFaculty(savedFaculty);
 
             const savedYear = await getSetting<number>('year', 1);
-            setYear(savedYear);
+
+            if (savedYear) {
+                setYear(savedYear);
+            }
 
             const savedGroup = await getSetting<Group>('group');
             if (savedGroup) {
@@ -102,6 +108,12 @@ export default function SettingsPage() {
 
             const savedStudentId = await getSetting<number>('studentId');
             setStudentId(savedStudentId);
+
+            const savedEnableNotifications = await getSetting<boolean>('enableNotifications', true);
+
+            if (savedEnableNotifications !== null) {
+                setEnableNotifications(savedEnableNotifications);
+            }
         }
 
         fetchData();
@@ -110,33 +122,6 @@ export default function SettingsPage() {
     return (
         <View
             style={styles.container}
-            onLayout={async () => {
-                try {
-                    const token = await Notifications.getExpoPushTokenAsync({
-                        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-                    });
-
-                    setExpoPushToken(token.data);
-                } catch (e) {
-                    Alert.alert(i18n.t('push_notifications_permission.title'), i18n.t('push_notifications_permission.message'), [
-                        {
-                            text: i18n.t('push_notifications_permission.cancel'),
-                            style: 'cancel',
-                            onPress: () => {
-                                showErrorMessage(i18n.t('push_notifications_permission.denied'));
-                            }
-                        },
-                        {
-                            text: i18n.t('push_notifications_permission.allow'),
-                            isPreferred: true,
-                            onPress: () => {
-                                registerForPushNotificationsAsync()
-                                    .then(setExpoPushToken);
-                            },
-                        },
-                    ]);
-                }
-            }}
             onTouchStart={(e) => {
                 Keyboard.dismiss()
                 const now = Date.now();
@@ -164,7 +149,11 @@ export default function SettingsPage() {
 
                                         showSuccessMessage(i18n.t('reset_settings_warning.confirmed'));
 
-                                        router.back();
+                                        if (router.canGoBack()) {
+                                            router.back();
+                                        } else {
+                                            router.replace('/');
+                                        }
                                     },
                                 },
                             ]);
@@ -250,6 +239,21 @@ export default function SettingsPage() {
                         <Text style={styles.icon}>👥</Text>
                     )}
                 />
+                <View style={styles.checkboxContainer} onTouchStart={() => {
+                    setEnableNotifications(!enableNotifications);
+                    registerForPushNotificationsAsync().then(setExpoPushToken);
+                }}>
+                    <Checkbox
+                        value={enableNotifications}
+                        style={styles.checkbox}
+                    />
+                    <Text style={styles.label}>
+                        {i18n.t('receive_notifications')}
+                    </Text>
+                </View>
+                <Text style={styles.description}>
+                    {i18n.t('receive_notifications_description')}
+                </Text>
             </View>
 
             <Button
@@ -273,8 +277,8 @@ export default function SettingsPage() {
                     await setSetting('faculty', faculty);
                     await setSetting('year', year || 0);
                     await setSetting('group', group);
-                    await setSetting('isFirstRun', false);
                     await setSetting('email', email);
+                    await setSetting('enableNotifications', enableNotifications);
 
                     const payload: StudentSettings | StudentSettingsDB = {
                         expoPushToken: expoPushToken || "",
@@ -284,6 +288,7 @@ export default function SettingsPage() {
                         groupId: group?.id || 0,
                         locale: i18n.locale,
                         deviceLocale: Localization.getLocales()[0].languageCode,
+                        enableNotifications,
                     }
 
                     if (studentId) {
@@ -358,6 +363,11 @@ const styles = StyleSheet.create({
         marginBottom: 8,
         fontSize: 16,
     },
+    description: {
+        marginHorizontal: 8,
+        marginBottom: 8,
+        fontSize: 14,
+    },
     placeholderStyle: {
         fontSize: 16,
     },
@@ -374,5 +384,12 @@ const styles = StyleSheet.create({
     },
     button: {
         marginTop: "auto",
+    },
+    checkboxContainer: {
+        flexDirection: "row",
+        paddingHorizontal: 8,
+    },
+    checkbox: {
+        marginVertical: 20,
     }
 });

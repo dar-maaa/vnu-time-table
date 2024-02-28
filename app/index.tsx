@@ -1,14 +1,16 @@
-import {Redirect, Stack, router} from 'expo-router';
-import {Button, StyleSheet, Text, View, ActivityIndicator} from 'react-native';
-import {i18n} from "../i18n";
-import {JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
+import { Redirect, Stack, router } from 'expo-router';
+import { Button, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { i18n } from "../i18n";
+import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
 import { fetchTimetable, getSetting, Group } from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
 import { Table, Rows } from 'react-native-reanimated-table';
 
-function HeaderTitle(props: { children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined; }) {
+function HeaderTitle(props: {
+    children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
+}) {
     return <View style={styles.headerTitle}>
         <Text style={styles.headerLabel}>{props.children}</Text>
         <Entypo name="cog" size={20} style={styles.headerIcon} onPress={() => router.push('settings')}/>
@@ -16,7 +18,6 @@ function HeaderTitle(props: { children: string | number | boolean | ReactElement
 }
 
 export default function IndexPage() {
-    const [isFirstRun, setIsFirstRun] = useState<boolean>(true);
     const [appIsReady, setAppIsReady] = useState<boolean>(false);
     const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
     const [table, setTable] = useState<string[][]>([]);
@@ -36,14 +37,8 @@ export default function IndexPage() {
     useEffect(() => {
         async function prepare() {
             const group = await getSetting<Group>('group');
-            const isFirstRun = await getSetting<boolean>('isFirstRun', !group?.id) || true;
 
-            console.log('isFirstRun', isFirstRun);
-            console.log('group', group);
-
-            setIsFirstRun(isFirstRun);
-
-            if (!isFirstRun && group?.id) {
+            if (group?.id) {
                 setUserGroupId(group.id);
                 await fetchData(group.id);
             }
@@ -73,19 +68,19 @@ export default function IndexPage() {
 
     const datesWhitelist = [{
         start: minDate,
-        end: maxDate,
+        end  : maxDate,
     }];
 
     return (
-        isFirstRun ? <Redirect href="settings"/> :
+        !userGroupId ? <Redirect href="settings"/> :
             <View>
                 <Stack.Screen
                     options={{
                         // https://reactnavigation.org/docs/headers#setting-the-header-title
                         title: i18n.t('calendar'),
                         // https://reactnavigation.org/docs/headers#adjusting-header-styles
-                        headerStyle: {backgroundColor: '#A41A34'},
-                        headerTintColor: '#fff',
+                        headerStyle     : {backgroundColor: '#A41A34'},
+                        headerTintColor : '#fff',
                         headerTitleStyle: {
                             fontWeight: 'bold',
                         },
@@ -94,20 +89,17 @@ export default function IndexPage() {
                     }}
                 />
                 <View style={styles.quickButtonsContainer}>
-                    <Button
-                        title={i18n.t('today')}
-                        color={'#A41A34'}
-                        onPress={() => {
-                            setSelectedDate(moment());
-                        }}
-                    />
-                    <Button
-                        title={i18n.t('tomorrow')}
-                        color={'#A41A34'}
-                        onPress={() => {
-                            setSelectedDate(moment().add(1, 'day'));
-                        }}
-                    />
+                    <TouchableOpacity onPress={() => {
+                        setSelectedDate(moment());
+                    }}>
+                        <Text style={styles.quickButtons}>{i18n.t('today')}</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity onPress={() => {
+                        setSelectedDate(moment().add(1, 'day'));
+                    }}>
+                        <Text style={styles.quickButtons}>{i18n.t('tomorrow')}</Text>
+                    </TouchableOpacity>
                 </View>
                 <View>
                     <CalendarStrip
@@ -143,7 +135,7 @@ export default function IndexPage() {
                 {
                     table.length ?
                         <View style={styles.contentContainer}>
-                            <Table borderStyle={{borderWidth: 1, borderColor: '#A41A34'}}>
+                            <Table borderStyle={styles.table}>
                                 <Rows data={table} textStyle={styles.text} widthArr={[30, 70, 300]}/>
                             </Table>
                         </View> :
@@ -156,39 +148,50 @@ export default function IndexPage() {
 }
 
 const styles = StyleSheet.create({
-    headerTitle: {
-        display: 'flex',
-        width: '100%',
-        alignItems: 'center',
+    headerTitle          : {
+        display       : 'flex',
+        width         : '100%',
+        alignItems    : 'center',
         justifyContent: 'center',
     },
-    headerLabel: {
-        fontSize: 20,
+    headerLabel          : {
+        fontSize  : 20,
         fontWeight: 'bold',
-        color: 'white',
+        color     : 'white',
     },
-    headerIcon: {
-        color: 'white',
+    headerIcon           : {
+        color   : 'white',
         position: 'absolute',
-        right: 45,
+        right   : 45,
+    },
+    quickButtons         : {
+        color: '#A41A34',
+        marginTop: 15,
+        fontWeight: '600',
+        textTransform: 'uppercase',
     },
     quickButtonsContainer: {
         paddingHorizontal: 15,
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        flexDirection    : 'row',
+        flexWrap         : 'wrap',
+        justifyContent   : 'space-between',
     },
-    calendar: {
-        height: 120,
-        paddingTop: 20,
-        paddingBottom: 10,
+    calendar             : {
+        height           : 150,
+        paddingTop       : 20,
+        paddingBottom    : 10,
         paddingHorizontal: 5,
     },
-    contentContainer: {
+    contentContainer     : {
         paddingHorizontal: 15,
     },
-    text: {
-        margin: 6,
+    text                 : {
+        margin   : 6,
         textAlign: 'center',
-    }
+    },
+    table                : {
+        borderWidth : 1,
+        borderColor : '#A41A34',
+        borderRadius: 3,
+    },
 });

@@ -11,6 +11,8 @@
   "your_year": "Your year: %{year}",
   "your_group": "Your group",
   "select_a_group": "Type your group",
+  "receive_notifications": "Receive notifications",
+  "receive_notifications_description": "Receive notifications about timetable changes and motivational messages",
   "save_settings": "Save settings",
   "settings_saved": "Settings saved",
   "timetable": "Timetables",
@@ -29,10 +31,6 @@
     "confirmed": "Settings reset"
   },
   "push_notifications_permission": {
-    "title": "Push notifications",
-    "message": "We need your permission to send you notifications about timetable changes",
-    "cancel": "Cancel",
-    "allow": "Allow",
-    "denied": "You have denied the permission to send notifications. You can change this in the settings"
+    "disabled": "You have disabled notifications, so you won't receive any timetable changes and motivational messages. You can enable them in the settings anytime."
   }
 }

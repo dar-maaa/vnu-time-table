@@ -68,7 +68,7 @@ export async function registerForPushNotificationsAsync() {
             finalStatus = status;
         }
         if (finalStatus !== 'granted') {
-            showErrorMessage(i18n.t('push_notifications_permission.denied'));
+            showErrorMessage(i18n.t('push_notifications_permission.disabled'));
             return;
         }
         // Learn more about projectId:
@@ -159,7 +159,7 @@ export async function fetchTimetable(groupId: number, date: Moment): Promise<str
 
 export function showErrorMessage(message: string) {
     Toast.show(message, {
-        duration: Toast.durations.LONG,
+        duration: Toast.durations.LONG * 2,
         position: Toast.positions.BOTTOM,
         keyboardAvoiding: true,
         textStyle: {color: 'white'},
