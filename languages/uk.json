@@ -3,9 +3,11 @@
   "NSNotificationsUsageDescription": "Сповіщення про зміни в розкладі",
   "settings": "Налаштування",
   "your_email": "Корпоративна пошта:",
-  "enter_your_email": "Введіть вашу корпоративну пошту",
-  "invalid_corporate_email": "Пошта повинна закінчуватись на @%{corporate_domain}",
+  "enter_your_email": "Введіть вашу корпоративну пошту (без домену)",
   "invalid_email": "Невірний формат електронної пошти",
+  "email_description": "Ми відправимо вам листа з кодом підтвердження на цю адресу",
+  "your_email_is_not_confirmed_yet": "Ваша пошта ще не підтверджена",
+  "your_email_is_confirmed": "Ваша пошта підтверджена",
   "select_a_faculty": "Виберіть факультет",
   "your_faculty": "Ваш факультет:",
   "your_year": "Ваш курс: %{year}",
@@ -32,5 +34,13 @@
   },
   "push_notifications_permission": {
     "disabled": "Ви вимкнули сповіщення, тому ми не зможемо вас повідомляти про зміни в розкладі та надсилати мотиваційні повідомлення. Ви можете увімкнути їх в налаштуваннях в будь-який час."
+  },
+  "email_confirmation": "Підтвердження пошти",
+  "we_have_sent_you_an_email_with_a_confirmation_code": "Ми відправили вам листа з кодом підтвердження. Будь ласка, введіть його нижче.",
+  "confirm_email_code": "Підтвердити електронну пошту",
+  "email_confirmed_successfully": "Вашу пошту підтверджено",
+  "x": "X",
+  "errors": {
+    "ERR_INVALID_CONFIRMATION_CODE": "Невірний код підтвердження"
   }
 }

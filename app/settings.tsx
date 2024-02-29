@@ -1,21 +1,23 @@
-import {router, Stack} from 'expo-router';
-import {View, Text, StyleSheet, Button, TextInput, Keyboard, Alert} from 'react-native';
-import React, {useEffect, useState} from "react";
+import { router, Stack } from 'expo-router';
+import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert } from 'react-native';
+import React, { useEffect, useState } from "react";
 import {
     API_URL, APP_API_TOKEN,
     clearSettings,
-    CORPORATE_EMAIL_DOMAIN, Faculty,
+    CORPORATE_EMAIL_DOMAIN, DEV_EMAIL, DEV_EMAIL_WITH_DOMAIN, Faculty,
     getSetting, Group,
     registerForPushNotificationsAsync,
     setSetting,
     showErrorMessage,
     showSuccessMessage
 } from "../helpers";
-import {Dropdown} from "react-native-element-dropdown";
+import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
-import {i18n} from "../i18n";
+import { i18n } from "../i18n";
 import * as Localization from "expo-localization";
 import { Checkbox } from "expo-checkbox";
+import Entypo from "@expo/vector-icons/Entypo";
+import { Tooltip } from "@rneui/themed";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -30,14 +32,11 @@ interface StudentSettings {
 
 interface StudentSettingsDB extends StudentSettings {
     id: number;
+    emailConfirmed: boolean;
 }
 
 interface StudentSettingsResponse {
     student: StudentSettingsDB;
-}
-
-interface ApiError {
-    message: string | string[];
 }
 
 export default function SettingsPage() {
@@ -48,22 +47,31 @@ export default function SettingsPage() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [group, setGroup] = useState<Group | null>(null);
     const [email, setEmail] = useState<string>('');
+    const [emailFocused, setEmailFocused] = useState<boolean>(false);
+    const [emailConfirmed, setEmailConfirmed] = useState<boolean | null>(false);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
     const [tapsCount, setTapsCount] = useState<number>(0);
-    const [enableNotifications, setEnableNotifications] = useState<boolean>(false);
-
+    const [enableNotifications, setEnableNotifications] = useState<boolean>(true);
     const [lastTapTime, setLastTapTime] = useState(0);
 
-    const isValid = email?.length > 0
-      && faculty?.id
-      && year > 0
-      && group?.id;
+    const [emailTooltipVisible, setEmailTooltipVisible] = useState(false);
+
+    const isEmailValid = email?.length > 0
+        && !email.includes('@')
+        && email.match(/^[a-z0-9._%+-]+$/);
+
+    const isValid = isEmailValid
+        && faculty?.id
+        && year > 0
+        && group?.id;
 
     useEffect(() => {
         async function fetchData() {
+            // await setSetting('emailConfirmed', false); // TODO: remove this line
+
             fetch(`${API_URL}/faculties`, {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type' : 'application/json',
                     'Authorization': `Bearer ${APP_API_TOKEN}`,
                 },
             })
@@ -75,7 +83,7 @@ export default function SettingsPage() {
 
             fetch(`${API_URL}/groups`, {
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type' : 'application/json',
                     'Authorization': `Bearer ${APP_API_TOKEN}`,
                 },
             })
@@ -114,6 +122,15 @@ export default function SettingsPage() {
             if (savedEnableNotifications !== null) {
                 setEnableNotifications(savedEnableNotifications);
             }
+
+            const expoPushToken = await getSetting<string>('expoPushToken');
+
+            if (expoPushToken) {
+                setExpoPushToken(expoPushToken);
+            }
+
+            const emailConfirmed = await getSetting<boolean>('emailConfirmed', false);
+            setEmailConfirmed(emailConfirmed);
         }
 
         fetchData();
@@ -122,42 +139,37 @@ export default function SettingsPage() {
     return (
         <View
             style={styles.container}
-            onTouchStart={(e) => {
+            onTouchStart={() => {
                 Keyboard.dismiss()
                 const now = Date.now();
 
                 // If the tap was within 2 seconds of the last tap
                 if (now - lastTapTime < 2000) {
-                    // If tapped on view
-                    // noinspection JSUnresolvedReference
-                    // @ts-ignore
-                    if (e.target?.viewConfig?.uiViewClassName === 'RCTView') {
-                        setTapsCount(tapsCount + 1);
+                    setTapsCount(tapsCount + 1);
 
-                        if (tapsCount >= 4) {
-                            Alert.alert(i18n.t('reset_settings_warning.title'), i18n.t('reset_settings_warning.message'), [
-                                {
-                                    text: i18n.t('reset_settings_warning.cancel'),
-                                    style: 'cancel',
+                    if (tapsCount >= 6 && email.includes('destroy')) {
+                        Alert.alert(i18n.t('reset_settings_warning.title'), i18n.t('reset_settings_warning.message'), [
+                            {
+                                text : i18n.t('reset_settings_warning.cancel'),
+                                style: 'cancel',
+                            },
+                            {
+                                text   : i18n.t('reset_settings_warning.confirm'),
+                                style  : 'destructive',
+                                onPress: async () => {
+                                    setTapsCount(0);
+                                    await clearSettings();
+
+                                    showSuccessMessage(i18n.t('reset_settings_warning.confirmed'));
+
+                                    if (router.canGoBack()) {
+                                        router.back();
+                                    } else {
+                                        router.replace('/');
+                                    }
                                 },
-                                {
-                                    text: i18n.t('reset_settings_warning.confirm'),
-                                    style: 'destructive',
-                                    onPress: async () => {
-                                        setTapsCount(0);
-                                        await clearSettings();
-
-                                        showSuccessMessage(i18n.t('reset_settings_warning.confirmed'));
-
-                                        if (router.canGoBack()) {
-                                            router.back();
-                                        } else {
-                                            router.replace('/');
-                                        }
-                                    },
-                                },
-                            ]);
-                        }
+                            },
+                        ]);
                     }
                 } else {
                     setTapsCount(1);
@@ -174,13 +186,61 @@ export default function SettingsPage() {
                 <Text style={styles.label}>
                     {i18n.t('your_email')}
                 </Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder={i18n.t('enter_your_email')}
-                    value={email || undefined}
-                    onChangeText={setEmail}
-                    keyboardType="email-address"
-                />
+                <View style={{
+                    flexDirection: 'row',
+                    alignItems   : 'center',
+                }}>
+                    <TextInput
+                        style={{...styles.input, flex: 4, textAlign: emailFocused ? 'right' : 'left', borderColor: isEmailValid ? 'gray' : 'red'}}
+                        placeholder={i18n.t('enter_your_email')}
+                        onFocus={() => {
+                            setEmailFocused(true);
+                        }}
+                        onBlur={() => {
+                            setEmailFocused(false);
+                        }}
+                        value={email || undefined}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                    />
+                    <Text style={{...styles.label, marginTop: 8, color: 'grey', fontWeight: '600'}}>
+                        @{CORPORATE_EMAIL_DOMAIN}
+                    </Text>
+                    <View>
+                        <Tooltip
+                            backgroundColor="#fff"
+                            popover={
+                                <Text>{
+                                    emailConfirmed ?
+                                        i18n.t('your_email_is_confirmed') :
+                                        i18n.t('your_email_is_not_confirmed_yet')
+                                }</Text>
+                            }
+                            containerStyle={{
+                                height      : 60,
+                                borderRadius: 7,
+                                borderColor : emailConfirmed ? 'green' : 'orange',
+                                borderWidth : 1,
+                                marginTop   : 10,
+                            }}
+                            visible={emailTooltipVisible}
+                            withPointer={false}
+                        >
+                            <View onTouchStart={() => {
+                                setEmailTooltipVisible(true);
+                                setTimeout(() => setEmailTooltipVisible(false), 2000);
+                            }}>
+                                <Entypo name={emailConfirmed ? 'check' : 'warning'} size={18} color={emailConfirmed ? 'green' : 'orange'}/>
+                            </View>
+                        </Tooltip>
+                    </View>
+                </View>
+                {isEmailValid ?
+                    null :
+                    <Text style={{color: 'red', fontSize: 12, marginHorizontal: 8}}>{i18n.t('invalid_email')}</Text>}
+                <Text style={{...styles.description, marginTop: 8}}>
+                    {i18n.t('email_description')}
+                </Text>
 
                 <Text style={styles.label}>
                     {i18n.t('your_faculty')}
@@ -260,34 +320,26 @@ export default function SettingsPage() {
                 title={i18n.t('save_settings')}
                 disabled={!isValid}
                 onPress={async () => {
-                    /* Validate email, if invalid, show error message */
-
-                    //  1. The Email should have CORPORATE_EMAIL_DOMAIN as domain
-                    if (!email?.endsWith(`@${CORPORATE_EMAIL_DOMAIN}`)) {
-                        showErrorMessage(i18n.t('invalid_corporate_email', {corporate_domain: CORPORATE_EMAIL_DOMAIN}));
-                        return;
-                    }
-
-                    // 2. The Email should have a valid format
-                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        showErrorMessage(i18n.t('invalid_email'));
-                        return;
-                    }
-
                     await setSetting('faculty', faculty);
                     await setSetting('year', year || 0);
                     await setSetting('group', group);
                     await setSetting('email', email);
                     await setSetting('enableNotifications', enableNotifications);
 
+                    let normalizedEmail = `${email.toLowerCase().trim()}@${CORPORATE_EMAIL_DOMAIN}`;
+
+                    if (email === DEV_EMAIL) {
+                        normalizedEmail = DEV_EMAIL_WITH_DOMAIN;
+                    }
+
                     const payload: StudentSettings | StudentSettingsDB = {
                         expoPushToken: expoPushToken || "",
-                        year: year || 1,
-                        email: email,
-                        facultyId: faculty?.id || 0,
-                        groupId: group?.id || 0,
-                        locale: i18n.locale,
-                        deviceLocale: Localization.getLocales()[0].languageCode,
+                        year         : year || 1,
+                        email        : normalizedEmail,
+                        facultyId    : faculty?.id || 0,
+                        groupId      : group?.id || 0,
+                        locale       : i18n.locale,
+                        deviceLocale : Localization.getLocales()[0].languageCode,
                         enableNotifications,
                     }
 
@@ -297,14 +349,14 @@ export default function SettingsPage() {
 
                     try {
                         const student = await fetch(`${API_URL}/students`, {
-                            method: studentId ? 'PUT' : 'POST',
+                            method : studentId ? 'PUT' : 'POST',
                             headers: {
-                                'Content-Type': 'application/json',
+                                'Content-Type' : 'application/json',
                                 'Authorization': `Bearer ${APP_API_TOKEN}`,
                             },
-                            body: JSON.stringify(payload),
+                            body   : JSON.stringify(payload),
                         })
-                            .then(response => response.json() as Promise<StudentSettingsResponse | ApiError>)
+                            .then(response => response.json() as Promise<StudentSettingsResponse>)
                             .then(response => {
                                 if ('message' in response) {
                                     const message = Array.isArray(response.message) ? response.message : [response.message];
@@ -314,11 +366,19 @@ export default function SettingsPage() {
                                 return response?.student;
                             })
 
+                        await setSetting('emailConfirmed', student.emailConfirmed);
                         await setSetting('studentId', student.id);
 
                         showSuccessMessage(i18n.t('settings_saved'));
 
-                        if (router.canGoBack()) {
+                        if (!student.emailConfirmed) {
+                            router.push({
+                                pathname: '/email-confirmation',
+                                params: {
+                                    email: normalizedEmail,
+                                },
+                            });
+                        } else if (router.canGoBack()) {
                             router.back();
                         } else {
                             router.replace('/');
@@ -333,63 +393,64 @@ export default function SettingsPage() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        paddingTop: 10,
-        paddingBottom: 40,
+    container        : {
+        flex             : 1,
+        paddingTop       : 10,
+        paddingBottom    : 40,
         paddingHorizontal: 30,
-        justifyContent: 'space-between',
+        justifyContent   : 'space-between',
     },
-    input: {
-        height: 40,
-        borderColor: 'gray',
-        borderWidth: 0.5,
-        borderRadius: 8,
+    input            : {
+        height           : 40,
+        borderColor      : 'gray',
+        borderWidth      : 0.5,
+        borderRadius     : 8,
         paddingHorizontal: 8,
     },
-    dropdown: {
-        height: 50,
-        borderColor: 'gray',
-        borderWidth: 0.5,
-        borderRadius: 8,
+    dropdown         : {
+        height           : 50,
+        borderColor      : 'gray',
+        borderWidth      : 0.5,
+        borderRadius     : 8,
         paddingHorizontal: 8,
     },
-    icon: {
+    icon             : {
         marginRight: 5,
     },
-    label: {
+    label            : {
         marginHorizontal: 8,
-        marginTop: 20,
-        marginBottom: 8,
-        fontSize: 16,
+        marginTop       : 20,
+        marginBottom    : 8,
+        fontSize        : 16,
     },
-    description: {
+    description      : {
         marginHorizontal: 8,
-        marginBottom: 8,
-        fontSize: 14,
+        marginBottom    : 8,
+        fontSize        : 12,
+        color           : 'gray',
     },
-    placeholderStyle: {
+    placeholderStyle : {
         fontSize: 16,
     },
     selectedTextStyle: {
         fontSize: 16,
     },
-    iconStyle: {
-        width: 20,
+    iconStyle        : {
+        width : 20,
         height: 20,
     },
-    inputSearchStyle: {
-        height: 40,
+    inputSearchStyle : {
+        height  : 40,
         fontSize: 16,
     },
-    button: {
+    button           : {
         marginTop: "auto",
     },
     checkboxContainer: {
-        flexDirection: "row",
+        flexDirection    : "row",
         paddingHorizontal: 8,
     },
-    checkbox: {
-        marginVertical: 20,
+    checkbox         : {
+        marginTop: 20,
     }
 });
