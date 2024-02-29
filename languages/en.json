@@ -3,8 +3,10 @@
   "NSNotificationsUsageDescription": "Receive notifications about timetable changes",
   "settings": "Settings",
   "your_email": "Your email",
-  "enter_your_email": "Enter your corporate email",
-  "invalid_corporate_email": "Invalid corporate email. It should end with @%{corporate_domain}",
+  "enter_your_email": "Enter your corporate email (without domain)",
+  "email_description": "We will send you a confirmation email to this address",
+  "your_email_is_not_confirmed_yet": "Your email is not confirmed yet",
+  "your_email_is_confirmed": "Your email is confirmed",
   "invalid_email": "Invalid email format",
   "select_a_faculty": "Select faculty",
   "your_faculty": "Your faculty:",
@@ -32,5 +34,13 @@
   },
   "push_notifications_permission": {
     "disabled": "You have disabled notifications, so you won't receive any timetable changes and motivational messages. You can enable them in the settings anytime."
+  },
+  "email_confirmation": "Email confirmation",
+  "we_have_sent_you_an_email_with_a_confirmation_code": "We have sent you an email with a confirmation code. Please enter it below.",
+  "confirm_email_code": "Confirm email",
+  "email_confirmed_successfully": "Email confirmed successfully",
+  "x": "X",
+  "errors": {
+    "ERR_INVALID_CONFIRMATION_CODE": "Invalid confirmation code"
   }
 }

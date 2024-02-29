@@ -1,12 +1,12 @@
 import { Redirect, Stack, router } from 'expo-router';
-import { Button, StyleSheet, Text, View, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { i18n } from "../i18n";
 import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
 import { fetchTimetable, getSetting, Group } from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
-import { Table, Rows } from 'react-native-reanimated-table';
+import { Table, Rows, TableWrapper } from 'react-native-reanimated-table';
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -23,12 +23,12 @@ export default function IndexPage() {
     const [table, setTable] = useState<string[][]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [userGroupId, setUserGroupId] = useState<number | null>(null);
+    const [refreshing, setRefreshing] = useState(false);
 
-    async function fetchData(groupId: number) {
+    async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
 
-        console.log('fetchData', groupId, selectedDate);
-        const data = await fetchTimetable(groupId, selectedDate);
+        const data = await fetchTimetable(groupId, selectedDate, forceRefresh);
 
         setTable(data);
         setLoading(false);
@@ -71,9 +71,11 @@ export default function IndexPage() {
         end  : maxDate,
     }];
 
+
+
     return (
         !userGroupId ? <Redirect href="settings"/> :
-            <View>
+            <>
                 <Stack.Screen
                     options={{
                         // https://reactnavigation.org/docs/headers#setting-the-header-title
@@ -134,16 +136,36 @@ export default function IndexPage() {
                 </View>
                 {
                     table.length ?
-                        <View style={styles.contentContainer}>
+                        <ScrollView
+                            style={styles.tableContainer}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={refreshing}
+                                    progressViewOffset={0}
+                                    onRefresh={async () => {
+                                        setRefreshing(true);
+
+                                        await fetchData(userGroupId, true);
+
+                                        setRefreshing(false);
+                                    }} />
+                            }
+                        >
                             <Table borderStyle={styles.table}>
-                                <Rows data={table} textStyle={styles.text} widthArr={[30, 70, 300]}/>
+                                <TableWrapper style={styles.tableWrapper}>
+                                    <Rows
+                                        data={table}
+                                        flexArr={[1, 3, 9]}
+                                        textStyle={styles.rowText}
+                                    />
+                                </TableWrapper>
                             </Table>
-                        </View> :
+                        </ScrollView> :
                         loading ?
                             <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
                             <Text style={{textAlign: 'center', fontSize: 16, marginTop: 122}}>{i18n.t('no_data')}</Text>
                 }
-            </View>
+            </>
     );
 }
 
@@ -165,9 +187,9 @@ const styles = StyleSheet.create({
         right   : 45,
     },
     quickButtons         : {
-        color: '#A41A34',
-        marginTop: 15,
-        fontWeight: '600',
+        color        : '#A41A34',
+        marginTop    : 15,
+        fontWeight   : '600',
         textTransform: 'uppercase',
     },
     quickButtonsContainer: {
@@ -182,16 +204,19 @@ const styles = StyleSheet.create({
         paddingBottom    : 10,
         paddingHorizontal: 5,
     },
-    contentContainer     : {
+    tableContainer       : {
         paddingHorizontal: 15,
-    },
-    text                 : {
-        margin   : 6,
-        textAlign: 'center',
+        flex             : 1,
     },
     table                : {
-        borderWidth : 1,
-        borderColor : '#A41A34',
-        borderRadius: 3,
+        borderWidth: 1,
+        borderColor: '#a8a1a3',
+    },
+    tableWrapper         : {
+        flexDirection: 'row',
+    },
+    rowText              : {
+        textAlign: 'center',
+        padding  : 6,
     },
 });

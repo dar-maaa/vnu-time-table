@@ -7,6 +7,9 @@ import Toast from "react-native-root-toast";
 import {i18n} from "./i18n";
 import { Moment } from "moment";
 
+export const DEV_EMAIL = 'serhii';
+export const DEV_EMAIL_WITH_DOMAIN = `${DEV_EMAIL}@matrunchyk.com`;
+
 export interface Faculty {
     createdAt: string;
     id: number;
@@ -27,13 +30,14 @@ export interface Timetable {
     subject: string;
 }
 
+export interface HttpResponse {
+    message?: string | string[];
+    code: number;
+}
+
 export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
 
-// export const API_URL = 'http://192.168.1.11:3000/api/v1';
-
-export const API_URL = 'https://vnu-time-table.digitalidea.ua/api/v1';
-// export const API_URL = process.env.EXPO_PUBLIC_API_URL;
-// console.log('API_URL', API_URL);
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
 
 export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
 
@@ -125,10 +129,13 @@ export async function clearSettings() {
  *
  * @param {number} groupId
  * @param {string} date
+ * @param {boolean} forceRefresh
  * @return {Promise<string[][]>}
  */
-export async function fetchTimetable(groupId: number, date: Moment): Promise<string[][]> {
-    return fetch(`${API_URL}/timetables`, {
+export async function fetchTimetable(groupId: number, date: Moment, forceRefresh: boolean): Promise<string[][]> {
+    const url = forceRefresh ? `${API_URL}/timetables?force=1` : `${API_URL}/timetables`;
+
+    return fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
