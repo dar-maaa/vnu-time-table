@@ -12,9 +12,11 @@
       }
     },
     "preview": {
+      "channel": "staging",
       "distribution": "internal"
     },
     "production": {
+      "channel": "production",
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://vnu-time-table.digitalidea.ua/api/v1"
