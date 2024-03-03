@@ -57,9 +57,9 @@ export default function IndexPage() {
         fetchData(userGroupId);
     }, [selectedDate, userGroupId]);
 
-    if (!appIsReady) {
-        return null;
-    }
+    // if (!appIsReady) {
+    //     return null;
+    // }
 
     moment.locale(i18n.locale);
 
@@ -74,7 +74,7 @@ export default function IndexPage() {
 
 
     return (
-        !userGroupId ? <Redirect href="settings"/> :
+        !userGroupId && appIsReady ? <Redirect href="settings"/> :
             <>
                 <Stack.Screen
                     options={{
@@ -90,80 +90,74 @@ export default function IndexPage() {
                         headerTitle: props => <HeaderTitle {...props} />,
                     }}
                 />
-                <View style={styles.quickButtonsContainer}>
-                    <TouchableOpacity onPress={() => {
-                        setSelectedDate(moment());
-                    }}>
-                        <Text style={styles.quickButtons}>{i18n.t('today')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity onPress={() => {
-                        setSelectedDate(moment().add(1, 'day'));
-                    }}>
-                        <Text style={styles.quickButtons}>{i18n.t('tomorrow')}</Text>
-                    </TouchableOpacity>
-                </View>
-                <View>
-                    <CalendarStrip
-                        minDate={minDate}
-                        maxDate={maxDate}
-                        scrollable
-                        startingDate={moment()}
-                        selectedDate={selectedDate}
-                        onDateSelected={setSelectedDate}
-                        style={styles.calendar}
-                        dateNumberStyle={{color: '#000'}}
-                        dateNameStyle={{color: '#000'}}
-                        highlightDateNumberStyle={{color: '#A41A34'}}
-                        highlightDateNameStyle={{color: '#A41A34'}}
-                        disabledDateNameStyle={{color: 'grey'}}
-                        disabledDateNumberStyle={{color: 'grey'}}
-                        datesWhitelist={datesWhitelist}
-                        // calendarAnimation={{
-                        //     type: 'sequence',
-                        //     duration: 30,
-                        // }}
-                        // daySelectionAnimation={{
-                        //     type: 'border',
-                        //     duration: 300,
-                        //     borderHighlightColor: '#A41A34',
-                        //     borderWidth: 2,
-                        //     animType: 'spring',
-                        //     animUpdateType: 'scale',
-                        //     animProperty: 'opacity',
-                        // }}
-                    />
-                </View>
                 {
-                    table.length ?
-                        <ScrollView
-                            style={styles.tableContainer}
-                            refreshControl={
-                                <RefreshControl
-                                    refreshing={refreshing}
-                                    progressViewOffset={0}
-                                    onRefresh={async () => {
-                                        setRefreshing(true);
+                    appIsReady ?
+                        <>
+                            <View style={styles.quickButtonsContainer}>
+                                <TouchableOpacity onPress={() => {
+                                    setSelectedDate(moment());
+                                }}>
+                                    <Text style={styles.quickButtons}>{i18n.t('today')}</Text>
+                                </TouchableOpacity>
 
-                                        await fetchData(userGroupId, true);
+                                <TouchableOpacity onPress={() => {
+                                    setSelectedDate(moment().add(1, 'day'));
+                                }}>
+                                    <Text style={styles.quickButtons}>{i18n.t('tomorrow')}</Text>
+                                </TouchableOpacity>
+                            </View>
+                            <View>
+                                <CalendarStrip
+                                    minDate={minDate}
+                                    maxDate={maxDate}
+                                    scrollable
+                                    startingDate={moment()}
+                                    selectedDate={selectedDate}
+                                    onDateSelected={setSelectedDate}
+                                    style={styles.calendar}
+                                    dateNumberStyle={{color: '#000'}}
+                                    dateNameStyle={{color: '#000'}}
+                                    highlightDateNumberStyle={{color: '#A41A34'}}
+                                    highlightDateNameStyle={{color: '#A41A34'}}
+                                    disabledDateNameStyle={{color: 'grey'}}
+                                    disabledDateNumberStyle={{color: 'grey'}}
+                                    datesWhitelist={datesWhitelist}
+                                />
+                            </View>
+                            {
+                                table.length ?
+                                    <ScrollView
+                                        style={styles.tableContainer}
+                                        refreshControl={
+                                            <RefreshControl
+                                                refreshing={refreshing}
+                                                progressViewOffset={0}
+                                                onRefresh={async () => {
+                                                    setRefreshing(true);
 
-                                        setRefreshing(false);
-                                    }} />
+                                                    if (userGroupId) {
+                                                        await fetchData(userGroupId, true);
+                                                    }
+
+                                                    setRefreshing(false);
+                                                }} />
+                                        }
+                                    >
+                                        <Table borderStyle={styles.table}>
+                                            <TableWrapper style={styles.tableWrapper}>
+                                                <Rows
+                                                    data={table}
+                                                    flexArr={[1, 3, 9]}
+                                                    textStyle={styles.rowText}
+                                                />
+                                            </TableWrapper>
+                                        </Table>
+                                    </ScrollView> :
+                                    loading ?
+                                        <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
+                                        <Text style={{textAlign: 'center', fontSize: 16, marginTop: 122}}>{i18n.t('no_data')}</Text>
                             }
-                        >
-                            <Table borderStyle={styles.table}>
-                                <TableWrapper style={styles.tableWrapper}>
-                                    <Rows
-                                        data={table}
-                                        flexArr={[1, 3, 9]}
-                                        textStyle={styles.rowText}
-                                    />
-                                </TableWrapper>
-                            </Table>
-                        </ScrollView> :
-                        loading ?
-                            <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
-                            <Text style={{textAlign: 'center', fontSize: 16, marginTop: 122}}>{i18n.t('no_data')}</Text>
+                        </> : <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/>
                 }
             </>
     );
