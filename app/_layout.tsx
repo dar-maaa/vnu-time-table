@@ -1,13 +1,16 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Entypo from '@expo/vector-icons/Entypo';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
-import {Stack, useNavigationContainerRef} from "expo-router";
+import { router, Stack, useNavigationContainerRef } from "expo-router";
 import {useFonts, FiraSans_400Regular, FiraSans_600SemiBold} from '@expo-google-fonts/fira-sans';
 import * as Notifications from "expo-notifications";
 import {RootSiblingParent} from 'react-native-root-siblings';
 import * as Sentry from "@sentry/react-native";
 import * as Updates from 'expo-updates';
+import { NotificationType } from "../helpers";
+import { Subscription } from "expo-notifications";
+import { useRouteInfo } from "expo-router/build/hooks";
 
 const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
 const manifest = Updates.manifest;
@@ -59,11 +62,33 @@ function Layout() {
     // Capture the NavigationContainer ref and register it with the instrumentation.
     const ref = useNavigationContainerRef();
     const [appIsReady, setAppIsReady] = useState(false);
+    const responseListener = useRef<Subscription>();
+    const route = useRouteInfo();
 
     let [fontsLoaded, fontError] = useFonts({
         FiraSans_400Regular,
         FiraSans_600SemiBold,
     });
+
+    useEffect(() => {
+        responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+            if (response.notification.request.content.data.type === NotificationType.MOTIVATION && route.pathname !== '/') {
+                if (router.canGoBack()) {
+                    router.back();
+                } else {
+                    router.replace('/');
+                }
+                return;
+            }
+        });
+
+        return () => {
+            if (!responseListener.current) {
+                return;
+            }
+            Notifications.removeNotificationSubscription(responseListener.current);
+        };
+    }, []);
 
     useEffect(() => {
         if (ref) {
