@@ -8,6 +8,7 @@ import Material from "@expo/vector-icons/MaterialIcons";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
 import { Table, Row } from 'react-native-reanimated-table';
+import PagerView from "react-native-pager-view";
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -27,7 +28,7 @@ export default function IndexPage() {
     const [userGroupId, setUserGroupId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [motivations, setMotivations] = useState<Motivation[]>();
-    const [motivation, setMotivation] = useState<Motivation>();
+    const [motivationPagerHeight, setMotivationPagerHeight] = useState(0);
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
@@ -50,11 +51,7 @@ export default function IndexPage() {
 
             if (studentId) {
                 await fetchStudentMotivations(studentId).then((r) => {
-                    setMotivations(r);
-
-                    if (r.length) {
-                        setMotivation(r[0]);
-                    }
+                    setMotivations(r.reverse());
                 });
             }
 
@@ -112,15 +109,26 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
-                            {motivation && (
-                                <View style={styles.motivationCard}>
-                                    {motivation.text && (
-                                        <>
-                                            <Text style={styles.motivationQuote}>“</Text>
-                                            <Text style={styles.motivationText}>{motivation.text}</Text>
-                                        </>
-                                    )}
-                                </View>
+                            {motivations?.length && (
+                                <PagerView style={{height: motivationPagerHeight}} initialPage={motivations?.length - 1}>
+                                    {motivations.map((motivation, index) => (
+                                        <View key={index}>
+                                            <View
+                                                onLayout={(e) => {
+                                                    console.log('layout', e.nativeEvent.layout.height)
+                                                    setMotivationPagerHeight(e.nativeEvent.layout.height  + 5);
+                                                }}
+                                                style={styles.motivationCard}>
+                                                {motivation.text && (
+                                                    <>
+                                                        <Text style={styles.motivationQuote}>“</Text>
+                                                        <Text style={styles.motivationText}>{motivation.text}</Text>
+                                                    </>
+                                                )}
+                                            </View>
+                                        </View>
+                                    ))}
+                                </PagerView>
                             )}
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
@@ -241,11 +249,12 @@ const styles = StyleSheet.create({
         minHeight        : 100,
         flexDirection    : 'row',
         alignItems       : 'center',
+        paddingRight     : 35,
     },
     motivationQuote      : {
-        color     : '#cdccbe',
-        fontWeight: '600',
-        fontSize  : 50,
+        color      : '#cdccbe',
+        fontWeight : '600',
+        fontSize   : 50,
         marginRight: 10,
     },
     motivationText       : {
