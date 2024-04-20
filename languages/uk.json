@@ -42,5 +42,12 @@
   "x": "X",
   "errors": {
     "ERR_INVALID_CONFIRMATION_CODE": "Невірний код підтвердження"
+  },
+  "weather": {
+    "page_title": "Погода",
+    "feels_like": "Відчувається",
+    "humidity": "Вологість",
+    "wind": "Вітер",
+    "visibility": "Видимість"
   }
 }

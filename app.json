@@ -26,7 +26,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.digitalidea.vnutimetable"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -46,6 +47,22 @@
         {
           "project": "vnu-time-table",
           "organization": "digital-idea"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for weather forecasts."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "extraProguardRules": "-keep public class com.digitalidea.vnutimetable.** {*;}",
+            "allowBackup": false
+          }
         }
       ]
     ],

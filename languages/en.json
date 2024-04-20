@@ -42,5 +42,12 @@
   "x": "X",
   "errors": {
     "ERR_INVALID_CONFIRMATION_CODE": "Invalid confirmation code"
+  },
+  "weather": {
+    "page_title": "Weather",
+    "feels_like": "Feels like",
+    "humidity": "Humidity",
+    "wind": "Wind",
+    "visibility": "Visibility"
   }
 }

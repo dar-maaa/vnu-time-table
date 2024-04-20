@@ -4,12 +4,12 @@ import React, { useEffect, useState } from "react";
 import {
     API_URL, APP_API_TOKEN,
     clearSettings,
-    CORPORATE_EMAIL_DOMAIN, DEV_EMAIL, DEV_EMAIL_WITH_DOMAIN, Faculty,
+    CORPORATE_EMAIL_DOMAIN, DEV_EMAILS, DEV_EMAIL_WITH_DOMAIN, Faculty,
     getSetting, Group,
     registerForPushNotificationsAsync,
     setSetting,
     showErrorMessage,
-    showSuccessMessage
+    showSuccessMessage, normalizeEmail
 } from "../helpers";
 import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
@@ -56,7 +56,7 @@ export default function SettingsPage() {
 
     const [emailTooltipVisible, setEmailTooltipVisible] = useState(false);
 
-    const isEmailValid = email?.length > 0
+    const isEmailValid = email?.length > 0 // TODO: Check
         && !email.includes('@')
         && email.match(/^[a-z0-9._%+-]+$/);
 
@@ -191,7 +191,12 @@ export default function SettingsPage() {
                     alignItems   : 'center',
                 }}>
                     <TextInput
-                        style={{...styles.input, flex: 4, textAlign: emailFocused ? 'right' : 'left', borderColor: isEmailValid ? 'gray' : 'red'}}
+                        style={{
+                            ...styles.input,
+                            flex: 4,
+                            textAlign: emailFocused ? 'right' : 'left',
+                            borderColor: isEmailValid ? 'gray' : 'red',
+                        }}
                         placeholder={i18n.t('enter_your_email')}
                         onFocus={() => {
                             setEmailFocused(true);
@@ -326,11 +331,7 @@ export default function SettingsPage() {
                     await setSetting('email', email);
                     await setSetting('enableNotifications', enableNotifications);
 
-                    let normalizedEmail = `${email.toLowerCase().trim()}@${CORPORATE_EMAIL_DOMAIN}`;
-
-                    if (email === DEV_EMAIL) {
-                        normalizedEmail = DEV_EMAIL_WITH_DOMAIN;
-                    }
+                    const normalizedEmail = normalizeEmail(email);
 
                     const payload: StudentSettings | StudentSettingsDB = {
                         expoPushToken: expoPushToken || "",
@@ -368,6 +369,7 @@ export default function SettingsPage() {
 
                         await setSetting('emailConfirmed', student.emailConfirmed);
                         await setSetting('studentId', student.id);
+                        await setSetting('student', student);
 
                         showSuccessMessage(i18n.t('settings_saved'));
 

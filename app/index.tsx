@@ -2,16 +2,18 @@ import { Redirect, Stack, router } from 'expo-router';
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { i18n } from "../i18n";
 import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
-import { fetchTimetable, getSetting, Group } from "../helpers";
+import { fetchStudentMotivations, fetchTimetable, getSetting, Group, Motivation } from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
+import Material from "@expo/vector-icons/MaterialIcons";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
-import { Table, Rows, TableWrapper } from 'react-native-reanimated-table';
+import { Table, Row } from 'react-native-reanimated-table';
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
 }) {
     return <View style={styles.headerTitle}>
+        <Material name="wb-sunny" size={20} style={styles.headerIcon} onPress={() => router.push('weather')}/>
         <Text style={styles.headerLabel}>{props.children}</Text>
         <Entypo name="cog" size={20} style={styles.headerIcon} onPress={() => router.push('settings')}/>
     </View>;
@@ -24,6 +26,7 @@ export default function IndexPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [userGroupId, setUserGroupId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
+    const [motivations, setMotivations] = useState<Motivation[]>();
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
@@ -31,7 +34,6 @@ export default function IndexPage() {
         const data = await fetchTimetable(groupId, selectedDate, forceRefresh);
 
         setTable(data);
-        setLoading(false);
     }
 
     useEffect(() => {
@@ -43,6 +45,16 @@ export default function IndexPage() {
                 await fetchData(group.id);
             }
 
+            const studentId = await getSetting<number>('studentId');
+
+            if (studentId) {
+                await fetchStudentMotivations(studentId).then((r) => {
+                    setMotivations(r);
+                    console.log(r);
+                });
+            }
+
+            setLoading(false);
             setAppIsReady(true);
         }
 
@@ -72,7 +84,6 @@ export default function IndexPage() {
     }];
 
 
-
     return (
         !userGroupId && appIsReady ? <Redirect href="settings"/> :
             <>
@@ -81,7 +92,9 @@ export default function IndexPage() {
                         // https://reactnavigation.org/docs/headers#setting-the-header-title
                         title: i18n.t('calendar'),
                         // https://reactnavigation.org/docs/headers#adjusting-header-styles
-                        headerStyle     : {backgroundColor: '#A41A34'},
+                        headerStyle     : {
+                            backgroundColor: '#A41A34',
+                        },
                         headerTintColor : '#fff',
                         headerTitleStyle: {
                             fontWeight: 'bold',
@@ -93,6 +106,14 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
+                            <View style={styles.motivationCard}>
+                                {motivations?.pop()?.text && (
+                                    <>
+                                        <Text style={styles.motivationQuote}>“</Text>
+                                        <Text style={styles.motivationText}>{motivations.pop()?.text}</Text>
+                                    </>
+                                )}
+                            </View>
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment());
@@ -140,17 +161,37 @@ export default function IndexPage() {
                                                     }
 
                                                     setRefreshing(false);
-                                                }} />
+                                                }}/>
                                         }
                                     >
                                         <Table borderStyle={styles.table}>
-                                            <TableWrapper style={styles.tableWrapper}>
-                                                <Rows
-                                                    data={table}
-                                                    flexArr={[1, 3, 9]}
-                                                    textStyle={styles.rowText}
-                                                />
-                                            </TableWrapper>
+                                            {
+                                                table.map((rowData, index) => {
+                                                    const rowStyle = {backgroundColor: '#f2f2f2'};
+
+                                                    if (rowData[2].toUpperCase().includes('(ЛАБ)')) {
+                                                        rowStyle.backgroundColor = '#fcd9d8';
+                                                    }
+
+                                                    if (rowData[2].toUpperCase().includes('(ПР)')) {
+                                                        rowStyle.backgroundColor = '#cef6fc';
+                                                    }
+
+                                                    if (rowData[2].toUpperCase().includes('(Л)')) {
+                                                        rowStyle.backgroundColor = '#fefefe';
+                                                    }
+
+                                                    return (
+                                                        <Row
+                                                            key={index}
+                                                            data={rowData}
+                                                            style={rowStyle}
+                                                            flexArr={[1, 3, 9]}
+                                                            textStyle={{...styles.rowText, color: rowData[2].trim() === '' ? '#ccc' : '#333'}}
+                                                        />
+                                                    )
+                                                })
+                                            }
                                         </Table>
                                     </ScrollView> :
                                     loading ?
@@ -165,10 +206,13 @@ export default function IndexPage() {
 
 const styles = StyleSheet.create({
     headerTitle          : {
+        // backgroundColor: '#fff',
         display       : 'flex',
+        flexDirection : 'row',
         width         : '100%',
         alignItems    : 'center',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
+        marginLeft    : -20,
     },
     headerLabel          : {
         fontSize  : 20,
@@ -176,9 +220,31 @@ const styles = StyleSheet.create({
         color     : 'white',
     },
     headerIcon           : {
-        color   : 'white',
-        position: 'absolute',
-        right   : 45,
+        color: 'white',
+        // position: 'absolute',
+        // right   : 45,
+    },
+    motivationCard       : {
+        paddingHorizontal: 15,
+        paddingVertical  : 10,
+        backgroundColor  : '#eee898',
+        borderRadius     : 10,
+        margin           : 15,
+        minHeight        : 100,
+        flexDirection    : 'row',
+        alignItems       : 'center',
+    },
+    motivationQuote      : {
+        color     : '#cdccbe',
+        fontWeight: '600',
+        fontSize  : 50,
+        marginRight: 10,
+    },
+    motivationText       : {
+        color     : '#373d3e',
+        fontWeight: '500',
+        fontSize  : 16,
+        textAlign : 'center',
     },
     quickButtons         : {
         color        : '#A41A34',
@@ -203,14 +269,15 @@ const styles = StyleSheet.create({
         flex             : 1,
     },
     table                : {
-        borderWidth: 1,
-        borderColor: '#a8a1a3',
+        borderWidth: 0.5,
+        borderColor: '#afabac',
     },
     tableWrapper         : {
         flexDirection: 'row',
     },
     rowText              : {
-        textAlign: 'center',
-        padding  : 6,
+        textAlign      : 'center',
+        padding        : 6,
+        backgroundColor: 'transparent',
     },
 });
