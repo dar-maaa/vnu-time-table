@@ -27,6 +27,7 @@ export default function IndexPage() {
     const [userGroupId, setUserGroupId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [motivations, setMotivations] = useState<Motivation[]>();
+    const [motivation, setMotivation] = useState<Motivation>();
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
@@ -50,7 +51,10 @@ export default function IndexPage() {
             if (studentId) {
                 await fetchStudentMotivations(studentId).then((r) => {
                     setMotivations(r);
-                    console.log(r);
+
+                    if (r.length) {
+                        setMotivation(r[0]);
+                    }
                 });
             }
 
@@ -66,7 +70,9 @@ export default function IndexPage() {
             return;
         }
 
-        fetchData(userGroupId);
+        fetchData(userGroupId).then(() => {
+            setLoading(false);
+        });
     }, [selectedDate, userGroupId]);
 
     // if (!appIsReady) {
@@ -106,14 +112,16 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
-                            <View style={styles.motivationCard}>
-                                {motivations?.pop()?.text && (
-                                    <>
-                                        <Text style={styles.motivationQuote}>“</Text>
-                                        <Text style={styles.motivationText}>{motivations.pop()?.text}</Text>
-                                    </>
-                                )}
-                            </View>
+                            {motivation && (
+                                <View style={styles.motivationCard}>
+                                    {motivation.text && (
+                                        <>
+                                            <Text style={styles.motivationQuote}>“</Text>
+                                            <Text style={styles.motivationText}>{motivation.text}</Text>
+                                        </>
+                                    )}
+                                </View>
+                            )}
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment());
