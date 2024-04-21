@@ -22,7 +22,6 @@ import * as Localization from "expo-localization";
 import { Checkbox } from "expo-checkbox";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Tooltip } from "@rneui/themed";
-import Sentry from "@sentry/react-native";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -462,8 +461,6 @@ export default function SettingsPage() {
                         await setSetting('emailConfirmed', student.emailConfirmed);
                         await setSetting('studentId', student.id);
                         await setSetting('student', student);
-
-                        Sentry.setUser(student);
 
                         showSuccessMessage(i18n.t('settings_saved'));
 
