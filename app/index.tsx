@@ -28,7 +28,7 @@ export default function IndexPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [userGroupId, setUserGroupId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
-    const [motivations, setMotivations] = useState<Motivation[]>();
+    const [motivations, setMotivations] = useState<Motivation[]>([]);
     const [motivationPagerHeight, setMotivationPagerHeight] = useState(0);
     const [motivationPagerHeights, setMotivationPagerHeights] = useState<Map<number, number>>(new Map());
 
@@ -36,6 +36,8 @@ export default function IndexPage() {
         setLoading(true);
 
         const data = await fetchTimetable(groupId, selectedDate, forceRefresh);
+
+        console.log(groupId, selectedDate);
 
         setTable(data);
     }
@@ -146,7 +148,7 @@ export default function IndexPage() {
                                     ))}
                                 </View>
                             )}
-                            {motivations?.length && (
+                            {motivations.length ? (
                                 <PagerView
                                     style={{...styles.motivationPager, height: motivationPagerHeight}}
                                     initialPage={motivations?.length - 1}
@@ -172,7 +174,7 @@ export default function IndexPage() {
                                         </View>
                                     ))}
                                 </PagerView>
-                            )}
+                            ) : null}
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment());

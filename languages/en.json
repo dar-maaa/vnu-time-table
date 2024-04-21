@@ -1,6 +1,7 @@
 {
   "CFBundleDisplayName": "VNU Timetables",
   "NSNotificationsUsageDescription": "Receive notifications about timetable changes",
+  "NSLocationWhenInUseUsageDescription": "Show weather information",
   "settings": "Settings",
   "your_email": "Your email",
   "enter_your_email": "Enter your corporate email (without domain)",
