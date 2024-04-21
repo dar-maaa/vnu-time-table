@@ -52,7 +52,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location for weather forecasts."
+          "locationAlwaysAndWhenInUsePermission": "Локація потрібна для отримання інформації про дані погоди у Вашому регіоні."
         }
       ],
       [

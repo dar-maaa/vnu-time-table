@@ -1,6 +1,7 @@
 {
   "CFBundleDisplayName": "Розклад ВНУ",
   "NSNotificationsUsageDescription": "Сповіщення про зміни в розкладі",
+  "NSLocationWhenInUseUsageDescription": "Визначення місцезнаходження для погоди",
   "settings": "Налаштування",
   "your_email": "Корпоративна пошта:",
   "enter_your_email": "Введіть вашу корпоративну пошту (без домену)",
