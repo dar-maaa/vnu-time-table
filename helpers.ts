@@ -201,6 +201,8 @@ export async function registerForPushNotificationsAsync() {
         token = await Notifications.getExpoPushTokenAsync({
             projectId: Constants.expoConfig?.extra?.eas?.projectId,
         });
+
+        await Notifications.setBadgeCountAsync(0);
     } else {
         alert('Must use physical device for Push Notifications');
     }
