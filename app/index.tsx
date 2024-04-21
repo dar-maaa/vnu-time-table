@@ -29,6 +29,7 @@ export default function IndexPage() {
     const [refreshing, setRefreshing] = useState(false);
     const [motivations, setMotivations] = useState<Motivation[]>();
     const [motivationPagerHeight, setMotivationPagerHeight] = useState(0);
+    const [motivationPagerHeights, setMotivationPagerHeights] = useState<Map<number, number>>(new Map());
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
@@ -51,7 +52,9 @@ export default function IndexPage() {
 
             if (studentId) {
                 await fetchStudentMotivations(studentId).then((r) => {
-                    setMotivations(r.reverse());
+                    if (Array.isArray(r)) {
+                        setMotivations(r.reverse());
+                    }
                 });
             }
 
@@ -110,13 +113,46 @@ export default function IndexPage() {
                     appIsReady ?
                         <>
                             {motivations?.length && (
-                                <PagerView style={{height: motivationPagerHeight}} initialPage={motivations?.length - 1}>
+                                <View style={styles.motivationPagerClone}>
+                                    {motivations.map((motivation, index) => (
+                                        <View
+                                            key={index}
+                                            onLayout={(e) => {
+                                                const maxHeight = Math.max(motivationPagerHeight, e.nativeEvent.layout.height + 30);
+                                                // setMotivationPagerHeight(maxHeight);
+                                                setMotivationPagerHeights((prev) => new Map(prev.set(index, maxHeight)));
+                                            }}
+                                            style={{
+                                                ...styles.motivationCard,
+                                                position: 'absolute',
+                                                width   : '90%',
+                                            }}>
+                                            {motivation.text && (
+                                                <>
+                                                    <Text style={styles.motivationQuote}>“</Text>
+                                                    <Text style={styles.motivationText}>{motivation.text}</Text>
+                                                </>
+                                            )}
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                            {motivations?.length && (
+                                <PagerView
+                                    style={{...styles.motivationPager, height: motivationPagerHeight}}
+                                    initialPage={motivations?.length - 1}
+                                    onPageSelected={(e) => {
+                                        console.log('onPageSelected', e.nativeEvent.position);
+                                        const height = motivationPagerHeights.get(e.nativeEvent.position);
+
+                                        if (height) {
+                                            setMotivationPagerHeight(height);
+                                        }
+                                    }}
+                                >
                                     {motivations.map((motivation, index) => (
                                         <View key={index}>
                                             <View
-                                                onLayout={(e) => {
-                                                    setMotivationPagerHeight(e.nativeEvent.layout.height  + 5);
-                                                }}
                                                 style={styles.motivationCard}>
                                                 {motivation.text && (
                                                     <>
@@ -239,13 +275,20 @@ const styles = StyleSheet.create({
         // position: 'absolute',
         // right   : 45,
     },
+    motivationPager : {
+    },
+    motivationPagerClone : {
+        position: 'absolute',
+        top     : -1000,
+        width   : '100%',
+    },
     motivationCard       : {
         paddingHorizontal: 15,
         paddingVertical  : 10,
         backgroundColor  : '#eee898',
         borderRadius     : 10,
         margin           : 15,
-        minHeight        : 100,
+        // minHeight        : 10,
         flexDirection    : 'row',
         alignItems       : 'center',
         paddingRight     : 35,

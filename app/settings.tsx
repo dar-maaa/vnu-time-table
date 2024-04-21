@@ -2,14 +2,18 @@ import { router, Stack } from 'expo-router';
 import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert } from 'react-native';
 import React, { useEffect, useState } from "react";
 import {
-    API_URL, APP_API_TOKEN,
+    API_URL,
+    APP_API_TOKEN,
+    CORPORATE_EMAIL_DOMAIN,
+    Faculty,
+    Group,
     clearSettings,
-    CORPORATE_EMAIL_DOMAIN, DEV_EMAILS, DEV_EMAIL_WITH_DOMAIN, Faculty,
-    getSetting, Group,
+    getSetting,
     registerForPushNotificationsAsync,
     setSetting,
     showErrorMessage,
-    showSuccessMessage, normalizeEmail
+    showSuccessMessage,
+    normalizeEmail,
 } from "../helpers";
 import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
@@ -47,16 +51,18 @@ export default function SettingsPage() {
     const [groups, setGroups] = useState<Group[]>([]);
     const [group, setGroup] = useState<Group | null>(null);
     const [email, setEmail] = useState<string>('');
+    const [prevEmail, setPrevEmail] = useState<string>('');
     const [emailFocused, setEmailFocused] = useState<boolean>(false);
     const [emailConfirmed, setEmailConfirmed] = useState<boolean | null>(false);
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
     const [tapsCount, setTapsCount] = useState<number>(0);
-    const [enableNotifications, setEnableNotifications] = useState<boolean>(true);
+    const [enableNotifications, setEnableNotifications] = useState<boolean>(false);
     const [lastTapTime, setLastTapTime] = useState(0);
-
     const [emailTooltipVisible, setEmailTooltipVisible] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [student, setStudent] = useState<StudentSettingsDB | null>(null);
 
-    const isEmailValid = email?.length > 0 // TODO: Check
+    const isEmailValid = email?.length > 0
         && !email.includes('@')
         && email.match(/^[a-z0-9._%+-]+$/);
 
@@ -65,7 +71,30 @@ export default function SettingsPage() {
         && year > 0
         && group?.id;
 
+    const saveIsDisabled = !isValid || isLoading;
+    const isEmailConfirmed = emailConfirmed && email === prevEmail;
+
     useEffect(() => {
+        if (enableNotifications) {
+            setIsLoading(true);
+
+            registerForPushNotificationsAsync()
+                .then(async token => {
+                    setExpoPushToken(token);
+                    await setSetting('expoPushToken', token);
+                })
+                .then(() => {
+                    setIsLoading(false);
+                })
+                .catch(error => {
+                    showErrorMessage(error.message);
+                })
+        }
+    }, [enableNotifications]);
+
+    useEffect(() => {
+        setIsLoading(true);
+
         async function fetchData() {
             // await setSetting('emailConfirmed', false); // TODO: remove this line
 
@@ -93,44 +122,103 @@ export default function SettingsPage() {
                     showErrorMessage(error.message);
                 });
 
-            const savedEmail = await getSetting<string>('email');
+            if (studentId) {
+                await fetch(`${API_URL}/students/${studentId}`, {
+                    headers: {
+                        'Content-Type' : 'application/json',
+                        'Authorization': `Bearer ${APP_API_TOKEN}`,
+                    },
+                })
+                    .then(response => response.json())
+                    .then((s: StudentSettingsResponse) => {
+                        setStudent(s.student);
+                    })
+                    .catch(error => {
+                        showErrorMessage(error.message);
+                    });
 
-            if (savedEmail) {
-                setEmail(savedEmail);
+                if (!student) {
+                    setIsLoading(false);
+                    return;
+                }
+
+                await setSetting('student', student);
+
+                const emailWithoutDomain = student.email.split('@')[0];
+
+                setEmail(emailWithoutDomain);
+                setPrevEmail(emailWithoutDomain);
+                await setSetting('email', emailWithoutDomain);
+
+                setYear(student.year);
+                await setSetting('year', student.year);
+
+                setExpoPushToken(student.expoPushToken);
+                await setSetting('expoPushToken', student.expoPushToken);
+
+                setEnableNotifications(student.enableNotifications);
+                await setSetting('enableNotifications', student.enableNotifications);
+
+                setEmailConfirmed(student.emailConfirmed);
+                await setSetting('emailConfirmed', student.emailConfirmed);
+
+                const foundFaculty = faculties.find(f => f.id === student.facultyId);
+
+                if (foundFaculty) {
+                    setFaculty(foundFaculty);
+                    await setSetting('faculty', foundFaculty);
+                }
+
+                const foundGroup = groups.find(g => g.id === student.groupId);
+
+                if (foundGroup) {
+                    setGroup(foundGroup);
+                    await setSetting('group', foundGroup);
+                }
+
+            } else {
+                const savedEmail = await getSetting<string>('email');
+
+                if (savedEmail) {
+                    setEmail(savedEmail);
+                    setPrevEmail(savedEmail);
+                }
+
+                const savedFaculty = await getSetting<Faculty>('faculty', null);
+                setFaculty(savedFaculty);
+
+                const savedYear = await getSetting<number>('year', 1);
+
+                if (savedYear) {
+                    setYear(savedYear);
+                }
+
+                const savedGroup = await getSetting<Group>('group');
+                if (savedGroup) {
+                    setGroups([savedGroup]);
+                }
+                setGroup(savedGroup);
+
+                const savedStudentId = await getSetting<number>('studentId');
+                setStudentId(savedStudentId);
+
+                const expoPushToken = await getSetting<string>('expoPushToken');
+
+                if (expoPushToken) {
+                    setExpoPushToken(expoPushToken);
+                }
+
+                const savedEnableNotifications = await getSetting<boolean>('enableNotifications', true);
+
+                if ((savedEnableNotifications !== null) && expoPushToken) {
+                    setEnableNotifications(savedEnableNotifications);
+                }
+
+                const emailConfirmed = await getSetting<boolean>('emailConfirmed', false);
+                setEmailConfirmed(emailConfirmed);
             }
 
-            const savedFaculty = await getSetting<Faculty>('faculty', null);
-            setFaculty(savedFaculty);
-
-            const savedYear = await getSetting<number>('year', 1);
-
-            if (savedYear) {
-                setYear(savedYear);
-            }
-
-            const savedGroup = await getSetting<Group>('group');
-            if (savedGroup) {
-                setGroups([savedGroup]);
-            }
-            setGroup(savedGroup);
-
-            const savedStudentId = await getSetting<number>('studentId');
-            setStudentId(savedStudentId);
-
-            const savedEnableNotifications = await getSetting<boolean>('enableNotifications', true);
-
-            if (savedEnableNotifications !== null) {
-                setEnableNotifications(savedEnableNotifications);
-            }
-
-            const expoPushToken = await getSetting<string>('expoPushToken');
-
-            if (expoPushToken) {
-                setExpoPushToken(expoPushToken);
-            }
-
-            const emailConfirmed = await getSetting<boolean>('emailConfirmed', false);
-            setEmailConfirmed(emailConfirmed);
+            setIsLoading(false);
         }
 
         fetchData();
@@ -216,7 +304,7 @@ export default function SettingsPage() {
                             backgroundColor="#fff"
                             popover={
                                 <Text>{
-                                    emailConfirmed ?
+                                    isEmailConfirmed ?
                                         i18n.t('your_email_is_confirmed') :
                                         i18n.t('your_email_is_not_confirmed_yet')
                                 }</Text>
@@ -224,7 +312,7 @@ export default function SettingsPage() {
                             containerStyle={{
                                 height      : 60,
                                 borderRadius: 7,
-                                borderColor : emailConfirmed ? 'green' : 'orange',
+                                borderColor : isEmailConfirmed ? 'green' : 'orange',
                                 borderWidth : 1,
                                 marginTop   : 10,
                             }}
@@ -235,7 +323,7 @@ export default function SettingsPage() {
                                 setEmailTooltipVisible(true);
                                 setTimeout(() => setEmailTooltipVisible(false), 2000);
                             }}>
-                                <Entypo name={emailConfirmed ? 'check' : 'warning'} size={18} color={emailConfirmed ? 'green' : 'orange'}/>
+                                <Entypo name={isEmailConfirmed ? 'check' : 'warning'} size={18} color={isEmailConfirmed ? 'green' : 'orange'}/>
                             </View>
                         </Tooltip>
                     </View>
@@ -306,7 +394,6 @@ export default function SettingsPage() {
                 />
                 <View style={styles.checkboxContainer} onTouchStart={() => {
                     setEnableNotifications(!enableNotifications);
-                    registerForPushNotificationsAsync().then(setExpoPushToken);
                 }}>
                     <Checkbox
                         value={enableNotifications}
@@ -323,13 +410,15 @@ export default function SettingsPage() {
 
             <Button
                 title={i18n.t('save_settings')}
-                disabled={!isValid}
+                disabled={saveIsDisabled}
                 onPress={async () => {
                     await setSetting('faculty', faculty);
                     await setSetting('year', year || 0);
                     await setSetting('group', group);
                     await setSetting('email', email);
                     await setSetting('enableNotifications', enableNotifications);
+
+                    setPrevEmail(email);
 
                     const normalizedEmail = normalizeEmail(email);
 
@@ -367,9 +456,13 @@ export default function SettingsPage() {
                                 return response?.student;
                             })
 
+                        setEmailConfirmed(student.emailConfirmed);
+
                         await setSetting('emailConfirmed', student.emailConfirmed);
                         await setSetting('studentId', student.id);
                         await setSetting('student', student);
+
+                        console.log('student:', student);
 
                         showSuccessMessage(i18n.t('settings_saved'));
 

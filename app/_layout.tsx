@@ -72,6 +72,9 @@ function Layout() {
 
     useEffect(() => {
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+            console.log('Received motivation notification, navigating back to the home screen');
+            console.log('Current route:', route.pathname)
+            console.log('Notification data:', response.notification.request.content.data)
             if (response.notification.request.content.data.type === NotificationType.MOTIVATION && route.pathname !== '/') {
                 if (router.canGoBack()) {
                     router.back();
