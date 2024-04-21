@@ -9,7 +9,7 @@ import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
 import { Table, Row } from 'react-native-reanimated-table';
 import PagerView from "react-native-pager-view";
-import Sentry from "@sentry/react-native";
+import * as Sentry from "@sentry/react-native";
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
