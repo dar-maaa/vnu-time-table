@@ -115,7 +115,6 @@ export default function IndexPage() {
                                         <View key={index}>
                                             <View
                                                 onLayout={(e) => {
-                                                    console.log('layout', e.nativeEvent.layout.height)
                                                     setMotivationPagerHeight(e.nativeEvent.layout.height  + 5);
                                                 }}
                                                 style={styles.motivationCard}>
