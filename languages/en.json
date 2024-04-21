@@ -49,6 +49,7 @@
     "feels_like": "Feels like",
     "humidity": "Humidity",
     "wind": "Wind",
-    "visibility": "Visibility"
+    "visibility": "Visibility",
+    "temperature": "Temperature"
   }
 }

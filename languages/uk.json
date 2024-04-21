@@ -49,6 +49,7 @@
     "feels_like": "Відчувається",
     "humidity": "Вологість",
     "wind": "Вітер",
-    "visibility": "Видимість"
+    "visibility": "Видимість",
+    "temperature": "Температура"
   }
 }

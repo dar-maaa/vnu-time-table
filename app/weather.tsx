@@ -109,9 +109,14 @@ export default function WeatherPage() {
                                         <View style={{...styles.forecastItems, marginTop: index ? 40 : 20}}>
                                             {day.map((item, index) => (
                                                 <View style={styles.forecastItem} key={index}>
-                                                    <Text style={styles.forecastItemTime}>
-                                                        {moment(item.dt, 'X').format('HH:mm')}
-                                                    </Text>
+                                                    <View style={styles.forecastDateWrapper}>
+                                                        <Text style={styles.forecastItemTime}>
+                                                            {moment(item.dt, 'X').format('HH:mm')}
+                                                        </Text>
+                                                        <Text style={{...styles.forecastCurrentDetail, fontSize: 20}}>
+                                                            {Math.round(item.main.temp)}°C
+                                                        </Text>
+                                                    </View>
                                                     <View style={styles.forecastItemIcon}>
                                                         <Image
                                                             style={{width: 80, height: 40}}
@@ -124,13 +129,16 @@ export default function WeatherPage() {
 
                                                     <View style={styles.forecastItemWeather}>
                                                         <Text style={styles.forecastCurrentDetail}>
+                                                            {i18n.t('weather.feels_like')}: {Math.round(item.main.feels_like)}°C
+                                                        </Text>
+                                                        <Text style={styles.forecastCurrentDetail}>
                                                             {i18n.t('weather.humidity')}: {item.main.humidity}%
                                                         </Text>
                                                         <Text style={styles.forecastCurrentDetail}>
                                                             {i18n.t('weather.wind')}: <Text style={{color: getWindColor(item.wind.speed)}}>{item.wind.speed} м/с</Text>
                                                         </Text>
                                                         <Text style={styles.forecastCurrentDetail}>
-                                                            {i18n.t('weather.visibility')}: <Text style={{color: getVisibilityColor(item.visibility)}}>{item.visibility} м</Text>
+                                                            {i18n.t('weather.visibility')}: <Text style={{color: getVisibilityColor(item.visibility || 0)}}>{item.visibility || 0} м</Text>
                                                         </Text>
                                                     </View>
                                                 </View>
@@ -166,6 +174,11 @@ const styles = StyleSheet.create({
     },
     viewPager             : {
         flex: 1,
+    },
+    forecastDateWrapper   : {
+        alignItems    : 'center',
+        justifyContent: 'center',
+        gap           : 5,
     },
     forecastDate          : {
         color        : '#a6a6a6',
