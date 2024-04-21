@@ -45,7 +45,6 @@ export default function EmailConfirmationPage() {
                         <TextInput
                             style={styles.hiddenInput}
                             autoFocus={true}
-                            caretHidden={true}
                             keyboardType={'number-pad'}
                             textContentType={'oneTimeCode'}
                             onChangeText={(text) => {

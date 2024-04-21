@@ -18,7 +18,7 @@ export interface ReceivedNotification {
     type: NotificationType;
 }
 
-export const DEV_EMAILS = ['serhii', 'serhii_mac', 'dasha_test'];
+export const DEV_EMAILS = ['serhii_dev', 'serhii', 'serhii_mac', 'dasha'];
 export const DEV_EMAIL_WITH_DOMAIN = '@matrunchyk.com';
 const OPENWEATHER_API_KEY = '849338767c0e95025b5559533d26b7c4';
 
@@ -180,7 +180,16 @@ export async function registerForPushNotificationsAsync() {
         const {status: existingStatus} = await Notifications.getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-            const {status} = await Notifications.requestPermissionsAsync();
+            const {status} = await Notifications.requestPermissionsAsync({
+                ios: {
+                    allowAlert: true,
+                    allowBadge: true,
+                    allowSound: true,
+                    allowDisplayInCarPlay: true,
+                    provideAppNotificationSettings: true,
+                    allowProvisional: true,
+                },
+            });
             finalStatus = status;
         }
         if (finalStatus !== 'granted') {
@@ -192,7 +201,6 @@ export async function registerForPushNotificationsAsync() {
         token = await Notifications.getExpoPushTokenAsync({
             projectId: Constants.expoConfig?.extra?.eas?.projectId,
         });
-        console.log(token.data);
     } else {
         alert('Must use physical device for Push Notifications');
     }
