@@ -27,7 +27,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.digitalidea.vnutimetable"
+      "package": "com.digitalidea.vnutimetable",
+      "googleServicesFile": "google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png",

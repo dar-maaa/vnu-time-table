@@ -32,6 +32,7 @@
   "submit": {
     "production": {
       "android": {
+        "serviceAccountKeyPath": "vnu-time-table-play-service-account.json",
         "track": "internal"
       }
     }

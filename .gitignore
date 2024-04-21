@@ -37,3 +37,6 @@ yarn-error.*
 # IDEs
 /.idea
 /.vscode
+
+/google-services.json
+/vnu-time-table-play-service-account.json
