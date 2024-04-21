@@ -9,6 +9,7 @@ import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
 import { Table, Row } from 'react-native-reanimated-table';
 import PagerView from "react-native-pager-view";
+import Sentry from "@sentry/react-native";
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -50,10 +51,18 @@ export default function IndexPage() {
 
             const studentId = await getSetting<number>('studentId');
 
+            Sentry.setUser({id: studentId?.toString()});
+
             if (studentId) {
                 await fetchStudentMotivations(studentId).then((r) => {
                     if (Array.isArray(r)) {
                         setMotivations(r.reverse());
+                    }
+                });
+
+                Sentry.captureMessage('Motivations fetched', {
+                    extra: {
+                        motivations,
                     }
                 });
             }
@@ -112,59 +121,58 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
-                            {motivations?.length && (
-                                <View style={styles.motivationPagerClone}>
-                                    {motivations.map((motivation, index) => (
-                                        <View
-                                            key={index}
-                                            onLayout={(e) => {
-                                                const maxHeight = Math.max(motivationPagerHeight, e.nativeEvent.layout.height + 30);
-                                                // setMotivationPagerHeight(maxHeight);
-                                                setMotivationPagerHeights((prev) => new Map(prev.set(index, maxHeight)));
-                                            }}
-                                            style={{
-                                                ...styles.motivationCard,
-                                                position: 'absolute',
-                                                width   : '90%',
-                                            }}>
-                                            {motivation.text && (
-                                                <>
-                                                    <Text style={styles.motivationQuote}>“</Text>
-                                                    <Text style={styles.motivationText}>{motivation.text}</Text>
-                                                </>
-                                            )}
-                                        </View>
-                                    ))}
-                                </View>
-                            )}
-                            {motivations?.length && (
-                                <PagerView
-                                    style={{...styles.motivationPager, height: motivationPagerHeight}}
-                                    initialPage={motivations?.length - 1}
-                                    onPageSelected={(e) => {
-                                        console.log('onPageSelected', e.nativeEvent.position);
-                                        const height = motivationPagerHeights.get(e.nativeEvent.position);
+                            {/*{motivations?.length && (*/}
+                            {/*    <View style={styles.motivationPagerClone}>*/}
+                            {/*        {motivations.map((motivation, index) => (*/}
+                            {/*            <View*/}
+                            {/*                key={index}*/}
+                            {/*                onLayout={(e) => {*/}
+                            {/*                    const maxHeight = Math.max(motivationPagerHeight, e.nativeEvent.layout.height + 30);*/}
+                            {/*                    // setMotivationPagerHeight(maxHeight);*/}
+                            {/*                    setMotivationPagerHeights((prev) => new Map(prev.set(index, maxHeight)));*/}
+                            {/*                }}*/}
+                            {/*                style={{*/}
+                            {/*                    ...styles.motivationCard,*/}
+                            {/*                    position: 'absolute',*/}
+                            {/*                    width   : '90%',*/}
+                            {/*                }}>*/}
+                            {/*                {motivation.text && (*/}
+                            {/*                    <>*/}
+                            {/*                        <Text style={styles.motivationQuote}>“</Text>*/}
+                            {/*                        <Text style={styles.motivationText}>{motivation.text}</Text>*/}
+                            {/*                    </>*/}
+                            {/*                )}*/}
+                            {/*            </View>*/}
+                            {/*        ))}*/}
+                            {/*    </View>*/}
+                            {/*)}*/}
+                            {/*{motivations?.length && (*/}
+                            {/*    <PagerView*/}
+                            {/*        style={{...styles.motivationPager, height: motivationPagerHeight}}*/}
+                            {/*        initialPage={motivations?.length - 1}*/}
+                            {/*        onPageSelected={(e) => {*/}
+                            {/*            const height = motivationPagerHeights.get(e.nativeEvent.position);*/}
 
-                                        if (height) {
-                                            setMotivationPagerHeight(height);
-                                        }
-                                    }}
-                                >
-                                    {motivations.map((motivation, index) => (
-                                        <View key={index}>
-                                            <View
-                                                style={styles.motivationCard}>
-                                                {motivation.text && (
-                                                    <>
-                                                        <Text style={styles.motivationQuote}>“</Text>
-                                                        <Text style={styles.motivationText}>{motivation.text}</Text>
-                                                    </>
-                                                )}
-                                            </View>
-                                        </View>
-                                    ))}
-                                </PagerView>
-                            )}
+                            {/*            if (height) {*/}
+                            {/*                setMotivationPagerHeight(height);*/}
+                            {/*            }*/}
+                            {/*        }}*/}
+                            {/*    >*/}
+                            {/*        {motivations.map((motivation, index) => (*/}
+                            {/*            <View key={index}>*/}
+                            {/*                <View*/}
+                            {/*                    style={styles.motivationCard}>*/}
+                            {/*                    {motivation.text && (*/}
+                            {/*                        <>*/}
+                            {/*                            <Text style={styles.motivationQuote}>“</Text>*/}
+                            {/*                            <Text style={styles.motivationText}>{motivation.text}</Text>*/}
+                            {/*                        </>*/}
+                            {/*                    )}*/}
+                            {/*                </View>*/}
+                            {/*            </View>*/}
+                            {/*        ))}*/}
+                            {/*    </PagerView>*/}
+                            {/*)}*/}
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment());
