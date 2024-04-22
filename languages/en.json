@@ -17,6 +17,7 @@
   "receive_notifications": "Receive notifications",
   "receive_notifications_description": "Receive notifications about timetable changes and motivational messages",
   "save_settings": "Save settings",
+  "confirm_email": "Confirm email",
   "settings_saved": "Settings saved",
   "timetable": "Timetables",
   "calendar": "Calendar",
@@ -42,7 +43,8 @@
   "email_confirmed_successfully": "Email confirmed successfully",
   "x": "X",
   "errors": {
-    "ERR_INVALID_CONFIRMATION_CODE": "Invalid confirmation code"
+    "ERR_INVALID_CONFIRMATION_CODE": "Invalid confirmation code",
+    "ERR_STUDENT_NOT_FOUND": "Student not found"
   },
   "weather": {
     "page_title": "Weather",

@@ -2,15 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import Entypo from '@expo/vector-icons/Entypo';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Font from 'expo-font';
-import { router, Stack, useNavigationContainerRef } from "expo-router";
-import {useFonts, FiraSans_400Regular, FiraSans_600SemiBold} from '@expo-google-fonts/fira-sans';
+import { Stack, useNavigationContainerRef } from "expo-router";
+import { useFonts, FiraSans_400Regular, FiraSans_600SemiBold } from '@expo-google-fonts/fira-sans';
 import * as Notifications from "expo-notifications";
-import {RootSiblingParent} from 'react-native-root-siblings';
+import { RootSiblingParent } from 'react-native-root-siblings';
 import * as Sentry from "@sentry/react-native";
 import * as Updates from 'expo-updates';
-import { NotificationType } from "../helpers";
+import { NotificationType, useUserStore } from "../helpers";
 import { Subscription } from "expo-notifications";
-import { useRouteInfo } from "expo-router/build/hooks";
 
 const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
 const manifest = Updates.manifest;
@@ -20,7 +19,7 @@ const updateGroup = metadata && 'updateGroup' in metadata ? metadata.updateGroup
 
 Sentry.init({
     // debug: true,
-    dsn: 'https://7e10351f65f9a2942d85ca8923cb59ac@o1078061.ingest.sentry.io/4506823558430720',
+    dsn         : 'https://7e10351f65f9a2942d85ca8923cb59ac@o1078061.ingest.sentry.io/4506823558430720',
     integrations: [
         new Sentry.ReactNativeTracing({
             routingInstrumentation,
@@ -51,7 +50,7 @@ Notifications.setNotificationHandler({
     handleNotification: async () => ({
         shouldShowAlert: true,
         shouldPlaySound: true,
-        shouldSetBadge: true,
+        shouldSetBadge : true,
     }),
 });
 
@@ -62,8 +61,8 @@ function Layout() {
     // Capture the NavigationContainer ref and register it with the instrumentation.
     const ref = useNavigationContainerRef();
     const [appIsReady, setAppIsReady] = useState(false);
+    const {setHasNewMotivations} = useUserStore();
     const responseListener = useRef<Subscription>();
-    const route = useRouteInfo();
 
     let [fontsLoaded, fontError] = useFonts({
         FiraSans_400Regular,
@@ -72,15 +71,14 @@ function Layout() {
 
     useEffect(() => {
         responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-            console.log('Received motivation notification, navigating back to the home screen');
-            console.log('Current route:', route.pathname)
-            console.log('Notification data:', response.notification.request.content.data)
-            if (response.notification.request.content.data.type === NotificationType.MOTIVATION && route.pathname !== '/') {
-                if (router.canGoBack()) {
-                    router.back();
-                } else {
-                    router.replace('/');
-                }
+            Sentry.addBreadcrumb({
+                category: 'notification',
+                message : 'Received notification',
+                data    : response.notification.request.content.data,
+            });
+
+            if (response.notification.request.content.data.type === NotificationType.MOTIVATION) {
+                setHasNewMotivations(true);
                 return;
             }
         });
@@ -109,7 +107,7 @@ function Layout() {
                 // experience. Please remove this if you copy and paste the code!
                 // await new Promise(resolve => setTimeout(resolve, 2000));
             } catch (e) {
-                console.warn(e);
+                Sentry.captureException(e);
             } finally {
                 // Tell the application to render
                 setAppIsReady(true);
@@ -135,16 +133,16 @@ function Layout() {
     return (
         <RootSiblingParent>
             <Stack
-              // https://reactnavigation.org/docs/headers#sharing-common-options-across-screens
-              screenOptions={{
-                  headerStyle: {
-                      backgroundColor: '#A41A34',
-                  },
-                  headerTintColor: '#fff',
-                  headerTitleStyle: {
-                      fontWeight: 'bold',
-                  },
-              }}
+                // https://reactnavigation.org/docs/headers#sharing-common-options-across-screens
+                screenOptions={{
+                    headerStyle     : {
+                        backgroundColor: '#A41A34',
+                    },
+                    headerTintColor : '#fff',
+                    headerTitleStyle: {
+                        fontWeight: 'bold',
+                    },
+                }}
             >
                 {/* Optionally configure static options outside the route. */}
                 <Stack.Screen name="index" options={{}}/>

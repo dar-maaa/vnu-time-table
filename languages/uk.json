@@ -17,6 +17,7 @@
   "receive_notifications": "Отримувати сповіщення",
   "receive_notifications_description": "Отримуйте сповіщення про зміни в розкладі та мотиваційні повідомлення",
   "save_settings": "Зберегти налаштування",
+  "confirm_email": "Підтвердити пошту",
   "settings_saved": "Налаштування збережено",
   "timetable": "Розклад занять",
   "calendar": "Календар",
@@ -42,7 +43,8 @@
   "email_confirmed_successfully": "Вашу пошту підтверджено",
   "x": "X",
   "errors": {
-    "ERR_INVALID_CONFIRMATION_CODE": "Невірний код підтвердження"
+    "ERR_INVALID_CONFIRMATION_CODE": "Невірний код підтвердження",
+    "ERR_STUDENT_NOT_FOUND": "Студент не знайдений"
   },
   "weather": {
     "page_title": "Погода",

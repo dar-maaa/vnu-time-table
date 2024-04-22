@@ -2,15 +2,16 @@ import { Button, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, Tex
 import { i18n } from "../i18n";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { createRef, useEffect, useRef, useState } from "react";
-import { API_URL, APP_API_TOKEN, HttpResponse, setSetting, showErrorMessage, showSuccessMessage } from "../helpers";
+import { API_URL, APP_API_TOKEN, HttpResponse, setSetting, showErrorMessage, showSuccessMessage, useUserStore } from "../helpers";
 
 const CONFIRMATION_CODE_DIGITS = 6;
 
 // noinspection JSUnusedGlobalSymbols
 export default function EmailConfirmationPage() {
-    const {email} = useLocalSearchParams<{ email: string }>();
+    const {email, onConfirmSuccess} = useLocalSearchParams<{ email: string, onConfirmSuccess: any }>();
     const [error, setError] = useState<boolean>(false);
     const [code, setCode] = useState('');
+    const { setEmailConfirmed } = useUserStore();
     const refs = useRef([
         createRef<TextInput>(),
         createRef<TextInput>(),
@@ -148,6 +149,7 @@ export default function EmailConfirmationPage() {
 
                                     showSuccessMessage(i18n.t('email_confirmed_successfully'));
 
+                                    setEmailConfirmed(true);
                                     if (router.canGoBack()) {
                                         router.back();
                                     } else {
