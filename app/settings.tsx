@@ -13,7 +13,7 @@ import {
     setSetting,
     showErrorMessage,
     showSuccessMessage,
-    normalizeEmail,
+    normalizeEmail, useUserStore,
 } from "../helpers";
 import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
@@ -22,6 +22,7 @@ import * as Localization from "expo-localization";
 import { Checkbox } from "expo-checkbox";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Tooltip } from "@rneui/themed";
+import * as Sentry from "@sentry/react-native";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -53,7 +54,7 @@ export default function SettingsPage() {
     const [email, setEmail] = useState<string>('');
     const [prevEmail, setPrevEmail] = useState<string>('');
     const [emailFocused, setEmailFocused] = useState<boolean>(false);
-    const [emailConfirmed, setEmailConfirmed] = useState<boolean | null>(false);
+    const { emailConfirmed, setEmailConfirmed } = useUserStore();
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
     const [tapsCount, setTapsCount] = useState<number>(0);
     const [enableNotifications, setEnableNotifications] = useState<boolean>(false);
@@ -122,8 +123,10 @@ export default function SettingsPage() {
                     showErrorMessage(error.message);
                 });
 
-            if (studentId) {
-                await fetch(`${API_URL}/students/${studentId}`, {
+            const savedStudent = await getSetting<StudentSettingsDB>('student');
+
+            if (savedStudent?.id) {
+                await fetch(`${API_URL}/students/${savedStudent?.id}`, {
                     headers: {
                         'Content-Type' : 'application/json',
                         'Authorization': `Bearer ${APP_API_TOKEN}`,
@@ -199,9 +202,6 @@ export default function SettingsPage() {
                 }
                 setGroup(savedGroup);
 
-                const savedStudentId = await getSetting<number>('studentId');
-                setStudentId(savedStudentId);
-
                 const expoPushToken = await getSetting<string>('expoPushToken');
 
                 if (expoPushToken) {
@@ -215,7 +215,7 @@ export default function SettingsPage() {
                 }
 
                 const emailConfirmed = await getSetting<boolean>('emailConfirmed', false);
-                setEmailConfirmed(emailConfirmed);
+                setEmailConfirmed(emailConfirmed || false);
             }
 
             setIsLoading(false);
@@ -409,7 +409,7 @@ export default function SettingsPage() {
             </View>
 
             <Button
-                title={i18n.t('save_settings')}
+                title={isEmailConfirmed ? i18n.t('save_settings') : i18n.t('confirm_email')}
                 disabled={saveIsDisabled}
                 onPress={async () => {
                     await setSetting('faculty', faculty);
@@ -477,7 +477,8 @@ export default function SettingsPage() {
                             router.replace('/');
                         }
                     } catch (e: any) {
-                        showErrorMessage(e.message);
+                        Sentry.captureException(e);
+                        showErrorMessage(i18n.t(`errors.${e.message}`));
                     }
                 }}
             />

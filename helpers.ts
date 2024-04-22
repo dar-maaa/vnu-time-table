@@ -7,6 +7,8 @@ import Toast from "react-native-root-toast";
 import * as Localization from "expo-localization";
 import {i18n} from "./i18n";
 import { Moment } from "moment";
+import * as Sentry from "@sentry/react-native";
+import { create } from 'zustand';
 
 export enum NotificationType {
     MOTIVATION = 'MOTIVATION',
@@ -144,6 +146,13 @@ export interface WeatherResponse {
     };
 }
 
+interface UserState {
+    emailConfirmed: boolean;
+    hasNewMotivations: boolean;
+    setEmailConfirmed: (flag: boolean) => void;
+    setHasNewMotivations: (flag: boolean) => void;
+}
+
 // Type for organizing forecasts by the day of the month with a maximum of 8 forecasts per day
 export type DayOfMonthForecasts = FixedArray<FixedArray<WeatherForecast, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>, 6>;
 
@@ -152,6 +161,13 @@ export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ4
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
 
 export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
+
+export const useUserStore = create<UserState>(set => ({
+    emailConfirmed: false,
+    hasNewMotivations: false,
+    setEmailConfirmed: (flag: boolean) => set({ emailConfirmed: flag }),
+    setHasNewMotivations: (flag: boolean) => set({ hasNewMotivations: flag }),
+}));
 
 export async function schedulePushNotification() {
     await Notifications.scheduleNotificationAsync({
@@ -281,6 +297,7 @@ export async function fetchTimetable(groupId: number, date: Moment, forceRefresh
             return Object.values<Timetable>(response).map(v => [v.number, v.time, v.subject || ''])
         })
         .catch(e => {
+            Sentry.captureException(e);
             showErrorMessage(e.message);
             return [];
         });
@@ -302,7 +319,7 @@ export async function fetchStudentMotivations(studentId: number): Promise<Motiva
         .then(response => response.json())
         .then(response => {
             if (response.message) {
-                showErrorMessage(response.message);
+                showErrorMessage(i18n.t(`errors.${response.message}`));
             }
 
             return response;

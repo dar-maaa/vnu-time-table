@@ -2,7 +2,7 @@ import { Redirect, Stack, router } from 'expo-router';
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { i18n } from "../i18n";
 import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
-import { fetchStudentMotivations, fetchTimetable, getSetting, Group, Motivation } from "../helpers";
+import { fetchStudentMotivations, fetchTimetable, getSetting, Group, Motivation, useUserStore } from "../helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import Material from "@expo/vector-icons/MaterialIcons";
 import CalendarStrip from 'react-native-calendar-strip';
@@ -31,15 +31,28 @@ export default function IndexPage() {
     const [motivations, setMotivations] = useState<Motivation[]>([]);
     const [motivationPagerHeight, setMotivationPagerHeight] = useState(0);
     const [motivationPagerHeights, setMotivationPagerHeights] = useState<Map<number, number>>(new Map());
+    const [studentId, setStudentId] = useState<number | null>(null);
+    const {hasNewMotivations, setHasNewMotivations} = useUserStore();
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
 
         const data = await fetchTimetable(groupId, selectedDate, forceRefresh);
 
-        console.log(groupId, selectedDate);
-
         setTable(data);
+    }
+
+    async function fetchMotivations(id: number) {
+        try {
+            await fetchStudentMotivations(id).then((r) => {
+                if (Array.isArray(r)) {
+                    setMotivations(r.reverse());
+                }
+                setHasNewMotivations(false);
+            });
+        } catch (e) {
+            Sentry.captureException(e);
+        }
     }
 
     useEffect(() => {
@@ -56,17 +69,8 @@ export default function IndexPage() {
             Sentry.setUser({id: studentId?.toString()});
 
             if (studentId) {
-                await fetchStudentMotivations(studentId).then((r) => {
-                    if (Array.isArray(r)) {
-                        setMotivations(r.reverse());
-                    }
-                });
-
-                Sentry.captureMessage('Motivations fetched', {
-                    extra: {
-                        motivations,
-                    }
-                });
+                setStudentId(studentId);
+                await fetchMotivations(studentId);
             }
 
             setLoading(false);
@@ -77,6 +81,12 @@ export default function IndexPage() {
     }, []);
 
     useEffect(() => {
+        if (hasNewMotivations && studentId) {
+            fetchMotivations(studentId);
+        }
+    }, [hasNewMotivations]);
+
+    useEffect(() => {
         if (!userGroupId) {
             return;
         }
@@ -85,10 +95,6 @@ export default function IndexPage() {
             setLoading(false);
         });
     }, [selectedDate, userGroupId]);
-
-    // if (!appIsReady) {
-    //     return null;
-    // }
 
     moment.locale(i18n.locale);
 
@@ -123,14 +129,13 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
-                            {motivations?.length && (
+                            {motivations.length ? (
                                 <View style={styles.motivationPagerClone}>
                                     {motivations.map((motivation, index) => (
                                         <View
                                             key={index}
                                             onLayout={(e) => {
                                                 const maxHeight = Math.max(motivationPagerHeight, e.nativeEvent.layout.height + 30);
-                                                // setMotivationPagerHeight(maxHeight);
                                                 setMotivationPagerHeights((prev) => new Map(prev.set(index, maxHeight)));
                                             }}
                                             style={{
@@ -138,16 +143,16 @@ export default function IndexPage() {
                                                 position: 'absolute',
                                                 width   : '90%',
                                             }}>
-                                            {motivation.text && (
+                                            {motivation.text ? (
                                                 <>
                                                     <Text style={styles.motivationQuote}>“</Text>
                                                     <Text style={styles.motivationText}>{motivation.text}</Text>
                                                 </>
-                                            )}
+                                            ) : null}
                                         </View>
                                     ))}
                                 </View>
-                            )}
+                            ) : null}
                             {motivations.length ? (
                                 <PagerView
                                     style={{...styles.motivationPager, height: motivationPagerHeight}}
