@@ -1,15 +1,15 @@
 import { Redirect, Stack, router } from 'expo-router';
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
-import { i18n } from "../i18n";
+import { i18n } from "../lib/i18n";
 import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
-import { fetchStudentMotivations, fetchTimetable, getSetting, Group, Motivation, useUserStore } from "../helpers";
+import { fetchStudentMotivations, fetchTimetable, getSetting, Group, mixpanel, Motivation, useUserStore } from "../lib/helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import Material from "@expo/vector-icons/MaterialIcons";
 import CalendarStrip from 'react-native-calendar-strip';
 import moment from 'moment/min/moment-with-locales';
 import { Table, Row } from 'react-native-reanimated-table';
 import PagerView from "react-native-pager-view";
-import * as Sentry from "@sentry/react-native";
+import { captureException, setUser } from "@sentry/react-native";
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -47,11 +47,13 @@ export default function IndexPage() {
             await fetchStudentMotivations(id).then((r) => {
                 if (Array.isArray(r)) {
                     setMotivations(r.reverse());
+                    mixpanel.track('Motivations fetched', {count: r.length});
                 }
                 setHasNewMotivations(false);
             });
         } catch (e) {
-            Sentry.captureException(e);
+            captureException(e);
+            mixpanel.track('Motivations fetch failed');
         }
     }
 
@@ -66,10 +68,11 @@ export default function IndexPage() {
 
             const studentId = await getSetting<number>('studentId');
 
-            Sentry.setUser({id: studentId?.toString()});
+            setUser({id: studentId?.toString()});
 
             if (studentId) {
                 setStudentId(studentId);
+                mixpanel.identify(String(studentId));
                 await fetchMotivations(studentId);
             }
 
@@ -105,6 +108,11 @@ export default function IndexPage() {
         start: minDate,
         end  : maxDate,
     }];
+
+    // If user group is set and app is ready, track the event
+    if (userGroupId && appIsReady) {
+        mixpanel.track('Timetable viewed', {date: selectedDate.format('YYYY-MM-DD')});
+    }
 
 
     return (
@@ -163,6 +171,7 @@ export default function IndexPage() {
                                         if (height) {
                                             setMotivationPagerHeight(height);
                                         }
+                                        mixpanel.track('Motivation viewed', {text: motivations[e.nativeEvent.position].text});
                                     }}
                                 >
                                     {motivations.map((motivation, index) => (
@@ -183,12 +192,14 @@ export default function IndexPage() {
                             <View style={styles.quickButtonsContainer}>
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment());
+                                    mixpanel.track('Quick date selected', {date: 'today'});
                                 }}>
                                     <Text style={styles.quickButtons}>{i18n.t('today')}</Text>
                                 </TouchableOpacity>
 
                                 <TouchableOpacity onPress={() => {
                                     setSelectedDate(moment().add(1, 'day'));
+                                    mixpanel.track('Quick date selected', {date: 'tomorrow'});
                                 }}>
                                     <Text style={styles.quickButtons}>{i18n.t('tomorrow')}</Text>
                                 </TouchableOpacity>
@@ -200,7 +211,10 @@ export default function IndexPage() {
                                     scrollable
                                     startingDate={moment()}
                                     selectedDate={selectedDate}
-                                    onDateSelected={setSelectedDate}
+                                    onDateSelected={(date  : moment.Moment) => {
+                                        setSelectedDate(date);
+                                        mixpanel.track('Date selected', {date: date.format('YYYY-MM-DD')});
+                                    }}
                                     style={styles.calendar}
                                     dateNumberStyle={{color: '#000'}}
                                     dateNameStyle={{color: '#000'}}
@@ -222,6 +236,7 @@ export default function IndexPage() {
                                                 onRefresh={async () => {
                                                     setRefreshing(true);
 
+                                                    mixpanel.track('Timetable refreshed', {date: selectedDate.format('YYYY-MM-DD')});
                                                     if (userGroupId) {
                                                         await fetchData(userGroupId, true);
                                                     }

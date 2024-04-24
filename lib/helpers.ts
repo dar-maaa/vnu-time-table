@@ -1,14 +1,33 @@
-import * as Notifications from 'expo-notifications';
 import {Platform} from "react-native";
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from "react-native-root-toast";
-import * as Localization from "expo-localization";
 import {i18n} from "./i18n";
 import { Moment } from "moment";
-import * as Sentry from "@sentry/react-native";
 import { create } from 'zustand';
+import ExpoMixpanelAnalytics from "./ExpoMixpanelAnalytics";
+import {
+    AndroidImportance,
+    getExpoPushTokenAsync,
+    getPermissionsAsync,
+    requestPermissionsAsync,
+    scheduleNotificationAsync,
+    setBadgeCountAsync,
+    setNotificationChannelAsync
+} from "expo-notifications";
+import { getLocales } from "expo-localization";
+import { captureException } from "@sentry/react-native";
+import { isDevice } from "expo-device";
+
+export const DEV_EMAILS = ['serhii_dev', 'serhii', 'serhii_mac', 'dasha'];
+export const DEV_EMAIL_WITH_DOMAIN = '@matrunchyk.com';
+
+export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
+export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
+
+const OPENWEATHER_API_KEY = '849338767c0e95025b5559533d26b7c4';
+const MIXPANEL_API_KEY = '65a607fc427135da618c28b9346900a0';
 
 export enum NotificationType {
     MOTIVATION = 'MOTIVATION',
@@ -19,10 +38,6 @@ export interface ReceivedNotification {
     message: string;
     type: NotificationType;
 }
-
-export const DEV_EMAILS = ['serhii_dev', 'serhii', 'serhii_mac', 'dasha'];
-export const DEV_EMAIL_WITH_DOMAIN = '@matrunchyk.com';
-const OPENWEATHER_API_KEY = '849338767c0e95025b5559533d26b7c4';
 
 type GrowToSize<T, N extends number, A extends T[]> =
     A['length'] extends N ? A : GrowToSize<T, N, [...A, T]>;
@@ -156,11 +171,7 @@ interface UserState {
 // Type for organizing forecasts by the day of the month with a maximum of 8 forecasts per day
 export type DayOfMonthForecasts = FixedArray<FixedArray<WeatherForecast, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>, 6>;
 
-export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
-
-export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
-
-export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
+export const mixpanel = new ExpoMixpanelAnalytics(MIXPANEL_API_KEY);
 
 export const useUserStore = create<UserState>(set => ({
     emailConfirmed: false,
@@ -170,7 +181,7 @@ export const useUserStore = create<UserState>(set => ({
 }));
 
 export async function schedulePushNotification() {
-    await Notifications.scheduleNotificationAsync({
+    await scheduleNotificationAsync({
         content: {
             title: "You've got mail! 📬",
             body: 'Here is the notification body',
@@ -184,19 +195,19 @@ export async function registerForPushNotificationsAsync() {
     let token;
 
     if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('default', {
+        await setNotificationChannelAsync('default', {
             name: 'default',
-            importance: Notifications.AndroidImportance.MAX,
+            importance: AndroidImportance.MAX,
             vibrationPattern: [0, 250, 250, 250],
             lightColor: '#FF231F7C',
         });
     }
 
-    if (Device.isDevice) {
-        const {status: existingStatus} = await Notifications.getPermissionsAsync();
+    if (isDevice) {
+        const {status: existingStatus} = await getPermissionsAsync();
         let finalStatus = existingStatus;
         if (existingStatus !== 'granted') {
-            const {status} = await Notifications.requestPermissionsAsync({
+            const {status} = await requestPermissionsAsync({
                 ios: {
                     allowAlert: true,
                     allowBadge: true,
@@ -214,11 +225,11 @@ export async function registerForPushNotificationsAsync() {
         }
         // Learn more about projectId:
         // https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
-        token = await Notifications.getExpoPushTokenAsync({
+        token = await getExpoPushTokenAsync({
             projectId: Constants.expoConfig?.extra?.eas?.projectId,
         });
 
-        await Notifications.setBadgeCountAsync(0);
+        await setBadgeCountAsync(0);
     } else {
         alert('Must use physical device for Push Notifications');
     }
@@ -297,7 +308,7 @@ export async function fetchTimetable(groupId: number, date: Moment, forceRefresh
             return Object.values<Timetable>(response).map(v => [v.number, v.time, v.subject || ''])
         })
         .catch(e => {
-            Sentry.captureException(e);
+            captureException(e);
             showErrorMessage(e.message);
             return [];
         });
@@ -339,6 +350,8 @@ export function showErrorMessage(message: string) {
         textStyle: {color: 'white'},
         backgroundColor: '#A41A34',
     });
+
+    mixpanel.track('Error', {message});
 }
 
 /**
@@ -379,7 +392,7 @@ export function normalizeEmail(email: string | null): string {
  * @param long
  */
 export function buildForecastUrl(lat: number, long: number) {
-    return `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${long}&APPID=${OPENWEATHER_API_KEY}&units=metric&lang=${Localization.getLocales()[0].languageCode}`;
+    return `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${long}&APPID=${OPENWEATHER_API_KEY}&units=metric&lang=${getLocales()[0].languageCode}`;
 }
 
 /**

@@ -1,7 +1,7 @@
 import * as Localization from 'expo-localization';
 import {I18n} from 'i18n-js';
-import en from './languages/en.json';
-import uk from './languages/uk.json';
+import en from '../languages/en.json';
+import uk from '../languages/uk.json';
 
 // Set the key-value pairs for the different languages you want to support.
 

@@ -13,16 +13,16 @@ import {
     setSetting,
     showErrorMessage,
     showSuccessMessage,
-    normalizeEmail, useUserStore,
-} from "../helpers";
+    normalizeEmail, useUserStore, mixpanel,
+} from "../lib/helpers";
 import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
-import { i18n } from "../i18n";
-import * as Localization from "expo-localization";
+import { i18n } from "../lib/i18n";
 import { Checkbox } from "expo-checkbox";
 import Entypo from "@expo/vector-icons/Entypo";
 import { Tooltip } from "@rneui/themed";
-import * as Sentry from "@sentry/react-native";
+import { getLocales } from "expo-localization";
+import { captureException } from "@sentry/react-native";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -38,12 +38,16 @@ interface StudentSettings {
 interface StudentSettingsDB extends StudentSettings {
     id: number;
     emailConfirmed: boolean;
+    createdAt: string;
+    faculty: Faculty;
+    group: Group;
 }
 
 interface StudentSettingsResponse {
     student: StudentSettingsDB;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export default function SettingsPage() {
     const [studentId, setStudentId] = useState<number | null>(null);
     const [faculty, setFaculty] = useState<Faculty | null>(null);
@@ -54,7 +58,7 @@ export default function SettingsPage() {
     const [email, setEmail] = useState<string>('');
     const [prevEmail, setPrevEmail] = useState<string>('');
     const [emailFocused, setEmailFocused] = useState<boolean>(false);
-    const { emailConfirmed, setEmailConfirmed } = useUserStore();
+    const {emailConfirmed, setEmailConfirmed} = useUserStore();
     const [expoPushToken, setExpoPushToken] = useState<string | undefined>('');
     const [tapsCount, setTapsCount] = useState<number>(0);
     const [enableNotifications, setEnableNotifications] = useState<boolean>(false);
@@ -77,17 +81,25 @@ export default function SettingsPage() {
 
     useEffect(() => {
         if (enableNotifications) {
+            console.log('Registering for push notifications');
             setIsLoading(true);
 
             registerForPushNotificationsAsync()
                 .then(async token => {
+                    console.log('Push token:', token);
                     setExpoPushToken(token);
                     await setSetting('expoPushToken', token);
+
+                    // Masked token for Mixpanel, e.g. "ExponentPushToken[9599ab323c2]", to "ExponentPushToken[xxxx23c2]"
+                    mixpanel.track("Push token registered", {
+                        token: token?.replace(/(ExponentPushToken\[)(.*)(.{5})/, "$1xxxx$3") || "",
+                    });
                 })
                 .then(() => {
                     setIsLoading(false);
                 })
                 .catch(error => {
+                    console.log('Error registering for push notifications:', error.message);
                     showErrorMessage(error.message);
                 })
         }
@@ -97,125 +109,104 @@ export default function SettingsPage() {
         setIsLoading(true);
 
         async function fetchData() {
-            // await setSetting('emailConfirmed', false); // TODO: remove this line
+            console.log('Fetching faculties and groups')
 
-            fetch(`${API_URL}/faculties`, {
+            const fetchedFaculties = await fetch(`${API_URL}/faculties`, {
                 headers: {
                     'Content-Type' : 'application/json',
                     'Authorization': `Bearer ${APP_API_TOKEN}`,
                 },
             })
-                .then(response => response.json())
-                .then(setFaculties)
+                .then(response => response.json() as Promise<Faculty[]>)
                 .catch(error => {
                     showErrorMessage(error.message);
+
+                    return [] as Faculty[];
                 });
 
-            fetch(`${API_URL}/groups`, {
+            setFaculties(fetchedFaculties);
+
+            const fetchedGroups = await fetch(`${API_URL}/groups`, {
                 headers: {
                     'Content-Type' : 'application/json',
                     'Authorization': `Bearer ${APP_API_TOKEN}`,
                 },
             })
-                .then(response => response.json())
-                .then(setGroups)
+                .then(response => response.json() as Promise<Group[]>)
                 .catch(error => {
                     showErrorMessage(error.message);
+
+                    return [] as Group[];
                 });
 
-            const savedStudent = await getSetting<StudentSettingsDB>('student');
+            setGroups(fetchedGroups);
 
-            if (savedStudent?.id) {
-                await fetch(`${API_URL}/students/${savedStudent?.id}`, {
-                    headers: {
-                        'Content-Type' : 'application/json',
-                        'Authorization': `Bearer ${APP_API_TOKEN}`,
-                    },
-                })
-                    .then(response => response.json())
-                    .then((s: StudentSettingsResponse) => {
-                        setStudent(s.student);
-                    })
-                    .catch(error => {
-                        showErrorMessage(error.message);
+            const savedStudentId = await getSetting<number>('studentId');
+            console.log('Saved student ID:', savedStudentId)
+
+            setStudentId(savedStudentId || null);
+            console.log('Student ID set:', savedStudentId);
+
+            if (savedStudentId) {
+                console.log(`Fetching student with ID ${savedStudentId}`);
+
+                try {
+                    const response = await fetch(`${API_URL}/students/${savedStudentId}`, {
+                        headers: {
+                            'Content-Type' : 'application/json',
+                            'Authorization': `Bearer ${APP_API_TOKEN}`,
+                        },
                     });
 
-                if (!student) {
-                    setIsLoading(false);
-                    return;
+                    const s = await response.json() as StudentSettingsResponse;
+                    console.log('Fetched student:', s.student);
+
+                    setStudent(s.student);
+                    console.log('Student set:', s.student);
+
+                    await setSetting('student', student);
+
+                    const emailWithoutDomain = s.student.email.split('@')[0];
+                    console.log(`Setting email to ${emailWithoutDomain}`);
+
+                    setEmail(emailWithoutDomain);
+                    console.log('Email set:', s.student.email.split('@')[0]);
+                    setPrevEmail(emailWithoutDomain);
+                    await setSetting('email', emailWithoutDomain);
+
+                    setYear(s.student.year);
+                    await setSetting('year', s.student.year);
+
+                    setExpoPushToken(s.student.expoPushToken);
+                    await setSetting('expoPushToken', s.student.expoPushToken);
+
+                    setEnableNotifications(s.student.enableNotifications);
+                    await setSetting('enableNotifications', s.student.enableNotifications);
+
+                    setEmailConfirmed(s.student.emailConfirmed);
+                    await setSetting('emailConfirmed', s.student.emailConfirmed);
+
+                    console.log(fetchedFaculties, s.student.faculty.id)
+                    const foundFaculty = fetchedFaculties.find(f => f.id === s.student.faculty.id);
+                    console.log('Found faculty:', foundFaculty);
+
+                    if (foundFaculty) {
+                        setFaculty(foundFaculty);
+                        await setSetting('faculty', foundFaculty);
+                    }
+
+                    const foundGroup = fetchedGroups.find(g => g.id === s.student.group.id);
+                    console.log('Found group:', foundGroup);
+
+                    if (foundGroup) {
+                        setGroup(foundGroup);
+                        await setSetting('group', foundGroup);
+                    }
+
+                } catch (error: any) {
+                    console.log('Error fetching student:', error.message);
+                    showErrorMessage(error.message);
                 }
-
-                await setSetting('student', student);
-
-                const emailWithoutDomain = student.email.split('@')[0];
-
-                setEmail(emailWithoutDomain);
-                setPrevEmail(emailWithoutDomain);
-                await setSetting('email', emailWithoutDomain);
-
-                setYear(student.year);
-                await setSetting('year', student.year);
-
-                setExpoPushToken(student.expoPushToken);
-                await setSetting('expoPushToken', student.expoPushToken);
-
-                setEnableNotifications(student.enableNotifications);
-                await setSetting('enableNotifications', student.enableNotifications);
-
-                setEmailConfirmed(student.emailConfirmed);
-                await setSetting('emailConfirmed', student.emailConfirmed);
-
-                const foundFaculty = faculties.find(f => f.id === student.facultyId);
-
-                if (foundFaculty) {
-                    setFaculty(foundFaculty);
-                    await setSetting('faculty', foundFaculty);
-                }
-
-                const foundGroup = groups.find(g => g.id === student.groupId);
-
-                if (foundGroup) {
-                    setGroup(foundGroup);
-                    await setSetting('group', foundGroup);
-                }
-
-            } else {
-                const savedEmail = await getSetting<string>('email');
-
-                if (savedEmail) {
-                    setEmail(savedEmail);
-                    setPrevEmail(savedEmail);
-                }
-
-                const savedFaculty = await getSetting<Faculty>('faculty', null);
-                setFaculty(savedFaculty);
-
-                const savedYear = await getSetting<number>('year', 1);
-
-                if (savedYear) {
-                    setYear(savedYear);
-                }
-
-                const savedGroup = await getSetting<Group>('group');
-                if (savedGroup) {
-                    setGroups([savedGroup]);
-                }
-                setGroup(savedGroup);
-
-                const expoPushToken = await getSetting<string>('expoPushToken');
-
-                if (expoPushToken) {
-                    setExpoPushToken(expoPushToken);
-                }
-
-                const savedEnableNotifications = await getSetting<boolean>('enableNotifications', true);
-
-                if ((savedEnableNotifications !== null) && expoPushToken) {
-                    setEnableNotifications(savedEnableNotifications);
-                }
-
-                const emailConfirmed = await getSetting<boolean>('emailConfirmed', false);
-                setEmailConfirmed(emailConfirmed || false);
             }
 
             setIsLoading(false);
@@ -223,6 +214,16 @@ export default function SettingsPage() {
 
         fetchData();
     }, []);
+
+    useEffect(() => {
+        (async () => {
+            await setSetting('emailConfirmed', emailConfirmed);
+
+            if (student) {
+                student.emailConfirmed = emailConfirmed;
+            }
+        })()
+    }, [emailConfirmed]);
 
     return (
         <View
@@ -281,8 +282,8 @@ export default function SettingsPage() {
                     <TextInput
                         style={{
                             ...styles.input,
-                            flex: 4,
-                            textAlign: emailFocused ? 'right' : 'left',
+                            flex       : 4,
+                            textAlign  : emailFocused ? 'right' : 'left',
                             borderColor: isEmailValid ? 'gray' : 'red',
                         }}
                         placeholder={i18n.t('enter_your_email')}
@@ -322,6 +323,10 @@ export default function SettingsPage() {
                             <View onTouchStart={() => {
                                 setEmailTooltipVisible(true);
                                 setTimeout(() => setEmailTooltipVisible(false), 2000);
+
+                                mixpanel.track("Email tooltip opened", {
+                                    emailConfirmed: String(isEmailConfirmed),
+                                });
                             }}>
                                 <Entypo name={isEmailConfirmed ? 'check' : 'warning'} size={18} color={isEmailConfirmed ? 'green' : 'orange'}/>
                             </View>
@@ -429,7 +434,7 @@ export default function SettingsPage() {
                         facultyId    : faculty?.id || 0,
                         groupId      : group?.id || 0,
                         locale       : i18n.locale,
-                        deviceLocale : Localization.getLocales()[0].languageCode,
+                        deviceLocale : getLocales()[0].languageCode,
                         enableNotifications,
                     }
 
@@ -454,7 +459,21 @@ export default function SettingsPage() {
                                 }
 
                                 return response?.student;
-                            })
+                            });
+
+                        mixpanel.identify(String(student.id));
+                        mixpanel.people_set({
+                            $email      : student.email,
+                            $created    : student.createdAt,
+                            faculty     : faculty?.name || "",
+                            group       : group?.name || "",
+                            year        : String(year),
+                            locale      : i18n.locale,
+                            deviceLocale: getLocales()[0].languageCode,
+                        });
+                        mixpanel.track("Settings saved", {
+                            enableNotifications: String(enableNotifications),
+                        });
 
                         setEmailConfirmed(student.emailConfirmed);
 
@@ -467,7 +486,7 @@ export default function SettingsPage() {
                         if (!student.emailConfirmed) {
                             router.push({
                                 pathname: '/email-confirmation',
-                                params: {
+                                params  : {
                                     email: normalizedEmail,
                                 },
                             });
@@ -477,7 +496,7 @@ export default function SettingsPage() {
                             router.replace('/');
                         }
                     } catch (e: any) {
-                        Sentry.captureException(e);
+                        captureException(e);
                         showErrorMessage(i18n.t(`errors.${e.message}`));
                     }
                 }}
