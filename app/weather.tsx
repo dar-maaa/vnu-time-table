@@ -1,12 +1,27 @@
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
-import { buildForecastUrl, DayOfMonthForecasts, getVisibilityColor, getWindColor, partitionForecastsByDay, showErrorMessage, WeatherForecast, WeatherResponse } from "../helpers";
+import {
+    buildForecastUrl,
+    DayOfMonthForecasts,
+    getVisibilityColor,
+    getWindColor,
+    mixpanel,
+    partitionForecastsByDay,
+    showErrorMessage,
+    WeatherForecast,
+    WeatherResponse
+} from "../lib/helpers";
 import PagerView from "react-native-pager-view";
 import moment from 'moment/min/moment-with-locales';
-import { i18n } from "../i18n";
+import { i18n } from "../lib/i18n";
 import { Image } from "expo-image";
-import * as Location from 'expo-location';
+import {
+    getCurrentPositionAsync,
+    requestForegroundPermissionsAsync,
+    reverseGeocodeAsync,
+    LocationGeocodedAddress,
+} from "expo-location";
 
 const REFRESH_INTERVAL = 1000 * 60 * 60; // 1 hour
 
@@ -14,7 +29,7 @@ const REFRESH_INTERVAL = 1000 * 60 * 60; // 1 hour
 export default function WeatherPage() {
     const [loading, setLoading] = useState<boolean>(true);
     const [sixDayForecast, setSixDayForecast] = useState<DayOfMonthForecasts>();
-    const [region, setRegion] = useState<Location.LocationGeocodedAddress[]>();
+    const [region, setRegion] = useState<LocationGeocodedAddress[]>();
     const [currentWeather, setCurrentWeather] = useState<WeatherForecast>();
 
     moment.locale(i18n.locale);
@@ -22,16 +37,16 @@ export default function WeatherPage() {
     async function prepare() {
         setLoading(true);
 
-        const {status} = await Location.requestForegroundPermissionsAsync();
+        const {status} = await requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
             showErrorMessage('Permission to access location was denied');
             return;
         }
 
-        const location = await Location.getCurrentPositionAsync({});
+        const location = await getCurrentPositionAsync({});
 
-        await Location.reverseGeocodeAsync({
+        await reverseGeocodeAsync({
             latitude : location.coords.latitude,
             longitude: location.coords.longitude,
         }).then(setRegion);
@@ -54,6 +69,14 @@ export default function WeatherPage() {
         prepare();
     }, []);
 
+    if (region?.length) {
+        mixpanel.people_set({
+            city   : region[0].city,
+            country: region[0].country,
+        });
+        mixpanel.track('Weather page viewed');
+    }
+
     return (
         <View style={styles.container}>
             <Stack.Screen
@@ -69,7 +92,11 @@ export default function WeatherPage() {
                         {region && region[0].city}, {region && region[0].country}
                     </Text>
                     {sixDayForecast && currentWeather && (
-                        <PagerView style={styles.viewPager} initialPage={0}>
+                        <PagerView style={styles.viewPager} initialPage={0} onPageSelected={({nativeEvent}) => {
+                            mixpanel.track('Weather page swiped', {
+                                date: moment(sixDayForecast[nativeEvent.position][0].dt, 'X').format('YYYY-MM-DD'),
+                            });
+                        }}>
                             {sixDayForecast.filter(f => f.length).map((day, index) => (
                                 <View key={index}>
                                     <Text style={styles.forecastDate}>
@@ -101,7 +128,8 @@ export default function WeatherPage() {
                                                 {i18n.t('weather.wind')}: <Text style={{color: getWindColor(currentWeather?.wind.speed)}}>{currentWeather?.wind.speed} м/с</Text>
                                             </Text>
                                             <Text style={{...styles.forecastCurrentDetail, color: getVisibilityColor(currentWeather?.visibility)}}>
-                                                {i18n.t('weather.visibility')}: <Text style={{color: getVisibilityColor(currentWeather?.visibility)}}>{currentWeather?.visibility} м</Text>
+                                                {i18n.t('weather.visibility')}: <Text
+                                                style={{color: getVisibilityColor(currentWeather?.visibility)}}>{currentWeather?.visibility} м</Text>
                                             </Text>
                                         </View>
                                     </View>}
@@ -138,7 +166,8 @@ export default function WeatherPage() {
                                                             {i18n.t('weather.wind')}: <Text style={{color: getWindColor(item.wind.speed)}}>{item.wind.speed} м/с</Text>
                                                         </Text>
                                                         <Text style={styles.forecastCurrentDetail}>
-                                                            {i18n.t('weather.visibility')}: <Text style={{color: getVisibilityColor(item.visibility || 0)}}>{item.visibility || 0} м</Text>
+                                                            {i18n.t('weather.visibility')}: <Text
+                                                            style={{color: getVisibilityColor(item.visibility || 0)}}>{item.visibility || 0} м</Text>
                                                         </Text>
                                                     </View>
                                                 </View>
@@ -160,7 +189,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     contentContainer      : {
-        flex: 1,
+        flex           : 1,
         backgroundColor: '#12142c',
     },
     location              : {

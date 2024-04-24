@@ -8,7 +8,7 @@ import * as Notifications from "expo-notifications";
 import { RootSiblingParent } from 'react-native-root-siblings';
 import * as Sentry from "@sentry/react-native";
 import * as Updates from 'expo-updates';
-import { NotificationType, useUserStore } from "../helpers";
+import { NotificationType, useUserStore } from "../lib/helpers";
 import { Subscription } from "expo-notifications";
 
 const routingInstrumentation = new Sentry.ReactNavigationInstrumentation();
@@ -76,6 +76,8 @@ function Layout() {
                 message : 'Received notification',
                 data    : response.notification.request.content.data,
             });
+
+            console.log('Received notification', response.notification.request.content.data)
 
             if (response.notification.request.content.data.type === NotificationType.MOTIVATION) {
                 setHasNewMotivations(true);

@@ -20,6 +20,9 @@
       "bundleIdentifier": "com.digitalidea.vnutimetable",
       "infoPlist": {
         "CFBundleAllowMixedLocalizations": true
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {

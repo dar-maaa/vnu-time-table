@@ -1,8 +1,8 @@
 import { Button, Keyboard, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableWithoutFeedback, View } from "react-native";
-import { i18n } from "../i18n";
+import { i18n } from "../lib/i18n";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { createRef, useEffect, useRef, useState } from "react";
-import { API_URL, APP_API_TOKEN, HttpResponse, setSetting, showErrorMessage, showSuccessMessage, useUserStore } from "../helpers";
+import { API_URL, APP_API_TOKEN, HttpResponse, mixpanel, setSetting, showErrorMessage, showSuccessMessage, useUserStore } from "../lib/helpers";
 
 const CONFIRMATION_CODE_DIGITS = 6;
 
@@ -150,6 +150,9 @@ export default function EmailConfirmationPage() {
                                     showSuccessMessage(i18n.t('email_confirmed_successfully'));
 
                                     setEmailConfirmed(true);
+
+                                    mixpanel.track('Email Confirmed');
+
                                     if (router.canGoBack()) {
                                         router.back();
                                     } else {
