@@ -52,6 +52,8 @@
     "humidity": "Humidity",
     "wind": "Wind",
     "visibility": "Visibility",
-    "temperature": "Temperature"
+    "temperature": "Temperature",
+    "pressure": "Pressure",
+    "pressure_mmhg": "mmhg"
   }
 }

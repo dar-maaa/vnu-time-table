@@ -2,15 +2,13 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-nat
 import { Stack } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-    buildForecastUrl,
-    DayOfMonthForecasts,
+    mixpanel,
+    fetchWeather,
     getVisibilityColor,
     getWindColor,
-    mixpanel,
-    partitionForecastsByDay,
     showErrorMessage,
-    WeatherForecast,
-    WeatherResponse
+    DayOfMonthForecasts,
+    WeatherForecast, hPaToMmhg,
 } from "../lib/helpers";
 import PagerView from "react-native-pager-view";
 import moment from 'moment/min/moment-with-locales';
@@ -22,6 +20,7 @@ import {
     reverseGeocodeAsync,
     LocationGeocodedAddress,
 } from "expo-location";
+import * as Haptics from "expo-haptics";
 
 const REFRESH_INTERVAL = 1000 * 60 * 60; // 1 hour
 
@@ -31,6 +30,7 @@ export default function WeatherPage() {
     const [sixDayForecast, setSixDayForecast] = useState<DayOfMonthForecasts>();
     const [region, setRegion] = useState<LocationGeocodedAddress[]>();
     const [currentWeather, setCurrentWeather] = useState<WeatherForecast>();
+    // const [weatherImage, setWeatherImage] = useState<string>('');
 
     moment.locale(i18n.locale);
 
@@ -51,12 +51,24 @@ export default function WeatherPage() {
             longitude: location.coords.longitude,
         }).then(setRegion);
 
-        const forecastUrl = buildForecastUrl(location.coords.latitude, location.coords.longitude);
-        const forecast = await fetch(forecastUrl).then(response => response.json()) as WeatherResponse;
-        const dailyForecast = partitionForecastsByDay(forecast);
+        const forecast = await fetchWeather(location.coords.latitude, location.coords.longitude);
 
-        setSixDayForecast(dailyForecast);
-        setCurrentWeather(dailyForecast[0][0]);
+        setSixDayForecast(forecast.daily);
+        setCurrentWeather(forecast.current);
+
+        // const studentId = await getSetting<number>('studentId', 0);
+        // getWeatherImage(location.coords.latitude, location.coords.longitude, studentId)
+        //     .then(s => setWeatherImage(s))
+        //     .catch((e: any) => {
+        //         setWeatherImage('');
+        //         console.error(e);
+        //         Sentry.captureException(e);
+        //         mixpanel.track('Weather image fetch failed', {
+        //             error: e,
+        //             lat  : location.coords.latitude,
+        //             long : location.coords.longitude,
+        //         });
+        //     });
 
         setLoading(false);
     }
@@ -93,6 +105,7 @@ export default function WeatherPage() {
                     </Text>
                     {sixDayForecast && currentWeather && (
                         <PagerView style={styles.viewPager} initialPage={0} onPageSelected={({nativeEvent}) => {
+                            Haptics.selectionAsync();
                             mixpanel.track('Weather page swiped', {
                                 date: moment(sixDayForecast[nativeEvent.position][0].dt, 'X').format('YYYY-MM-DD'),
                             });
@@ -120,7 +133,7 @@ export default function WeatherPage() {
                                                 {currentWeather?.weather[0].description}
                                             </Text>
                                         </View>
-                                        <View style={{...styles.forecastCurrentDetails, gap: 5, marginTop: 38}}>
+                                        <View style={{...styles.forecastCurrentDetails, gap: 5, marginTop: 23}}>
                                             <Text style={styles.forecastCurrentDetail}>
                                                 {i18n.t('weather.humidity')}: {currentWeather?.main.humidity}%
                                             </Text>
@@ -131,8 +144,18 @@ export default function WeatherPage() {
                                                 {i18n.t('weather.visibility')}: <Text
                                                 style={{color: getVisibilityColor(currentWeather?.visibility)}}>{currentWeather?.visibility} м</Text>
                                             </Text>
+                                            <Text style={styles.forecastCurrentDetail}>
+                                                {i18n.t('weather.pressure')}: {hPaToMmhg(currentWeather?.main.pressure)} {i18n.t('weather.pressure_mmhg')}
+                                            </Text>
                                         </View>
                                     </View>}
+                                    {/*{weatherImage ? <View>*/}
+                                    {/*    <Text>{weatherImage}</Text>*/}
+                                    {/*    <Image*/}
+                                    {/*        style={styles.weatherImage}*/}
+                                    {/*        source={{uri: weatherImage}}*/}
+                                    {/*    />*/}
+                                    {/*</View>: null}*/}
                                     <ScrollView>
                                         <View style={{...styles.forecastItems, marginTop: index ? 40 : 20}}>
                                             {day.map((item, index) => (
@@ -141,7 +164,7 @@ export default function WeatherPage() {
                                                         <Text style={styles.forecastItemTime}>
                                                             {moment(item.dt, 'X').format('HH:mm')}
                                                         </Text>
-                                                        <Text style={{...styles.forecastCurrentDetail, fontSize: 20}}>
+                                                        <Text style={{...styles.forecastCurrentDetail, fontSize: 26}}>
                                                             {Math.round(item.main.temp)}°C
                                                         </Text>
                                                     </View>
@@ -168,6 +191,9 @@ export default function WeatherPage() {
                                                         <Text style={styles.forecastCurrentDetail}>
                                                             {i18n.t('weather.visibility')}: <Text
                                                             style={{color: getVisibilityColor(item.visibility || 0)}}>{item.visibility || 0} м</Text>
+                                                        </Text>
+                                                        <Text style={styles.forecastCurrentDetail}>
+                                                            {i18n.t('weather.pressure')}: {hPaToMmhg(item?.main.pressure)} {i18n.t('weather.pressure_mmhg')}
                                                         </Text>
                                                     </View>
                                                 </View>
@@ -240,6 +266,12 @@ const styles = StyleSheet.create({
         color        : '#cfcfcf',
         textTransform: 'uppercase',
     },
+    weatherImage: {
+        marginVertical: 10,
+        marginHorizontal: '10%',
+        width: 'auto',
+        height: 300,
+    },
     forecastItems         : {
         marginBottom    : 40,
         marginHorizontal: 30,
@@ -257,7 +289,7 @@ const styles = StyleSheet.create({
         width            : 100,
         color            : '#999',
         fontWeight       : 'bold',
-        fontSize         : 20,
+        fontSize         : 14,
         textAlign        : 'center',
     },
     forecastItemIcon      : {

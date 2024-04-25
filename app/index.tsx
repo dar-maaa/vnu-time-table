@@ -10,14 +10,19 @@ import moment from 'moment/min/moment-with-locales';
 import { Table, Row } from 'react-native-reanimated-table';
 import PagerView from "react-native-pager-view";
 import { captureException, setUser } from "@sentry/react-native";
+import * as Haptics from 'expo-haptics';
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
 }) {
     return <View style={styles.headerTitle}>
-        <Material name="wb-sunny" size={20} style={styles.headerIcon} onPress={() => router.push('weather')}/>
+        <TouchableOpacity onPress={() => router.push('weather')} style={styles.headerIconWrapper}>
+            <Material name="wb-sunny" size={20} style={styles.headerIcon}/>
+        </TouchableOpacity>
         <Text style={styles.headerLabel}>{props.children}</Text>
-        <Entypo name="cog" size={20} style={styles.headerIcon} onPress={() => router.push('settings')}/>
+        <TouchableOpacity onPress={() => router.push('settings')} style={styles.headerIconWrapper}>
+            <Entypo name="cog" size={20} style={styles.headerIcon}/>
+        </TouchableOpacity>
     </View>;
 }
 
@@ -166,6 +171,7 @@ export default function IndexPage() {
                                     style={{...styles.motivationPager, height: motivationPagerHeight}}
                                     initialPage={motivations?.length - 1}
                                     onPageSelected={(e) => {
+                                        Haptics.selectionAsync();
                                         const height = motivationPagerHeights.get(e.nativeEvent.position);
 
                                         if (height) {
@@ -211,10 +217,11 @@ export default function IndexPage() {
                                     scrollable
                                     startingDate={moment()}
                                     selectedDate={selectedDate}
-                                    onDateSelected={(date  : moment.Moment) => {
+                                    onDateSelected={(date: moment.Moment) => {
                                         setSelectedDate(date);
                                         mixpanel.track('Date selected', {date: date.format('YYYY-MM-DD')});
                                     }}
+                                    onWeekChanged={() => Haptics.selectionAsync()}
                                     style={styles.calendar}
                                     dateNumberStyle={{color: '#000'}}
                                     dateNameStyle={{color: '#000'}}
@@ -245,7 +252,7 @@ export default function IndexPage() {
                                                 }}/>
                                         }
                                     >
-                                        <Table borderStyle={styles.table}>
+                                        <Table borderStyle={styles.tableBorder} style={styles.table}>
                                             {
                                                 table.map((rowData, index) => {
                                                     const rowStyle = {backgroundColor: '#f2f2f2'};
@@ -300,13 +307,15 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color     : 'white',
     },
+    headerIconWrapper    : {
+        alignItems  : 'center',
+        justifyContent: 'center',
+        padding    : 4,
+    },
     headerIcon           : {
         color: 'white',
-        // position: 'absolute',
-        // right   : 45,
     },
-    motivationPager : {
-    },
+    motivationPager      : {},
     motivationPagerClone : {
         position: 'absolute',
         top     : -1000,
@@ -319,9 +328,9 @@ const styles = StyleSheet.create({
         borderRadius     : 10,
         margin           : 15,
         // minHeight        : 10,
-        flexDirection    : 'row',
-        alignItems       : 'center',
-        paddingRight     : 35,
+        flexDirection: 'row',
+        alignItems   : 'center',
+        paddingRight : 35,
     },
     motivationQuote      : {
         color      : '#cdccbe',
@@ -357,9 +366,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         flex             : 1,
     },
-    table                : {
+    tableBorder          : {
         borderWidth: 0.5,
         borderColor: '#afabac',
+
+    },
+    table                : {
+        marginBottom: 40,
     },
     tableWrapper         : {
         flexDirection: 'row',

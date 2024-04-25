@@ -26,7 +26,6 @@ export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ4
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
 export const CORPORATE_EMAIL_DOMAIN = 'vnu.edu.ua';
 
-const OPENWEATHER_API_KEY = '849338767c0e95025b5559533d26b7c4';
 const MIXPANEL_API_KEY = '65a607fc427135da618c28b9346900a0';
 
 export enum NotificationType {
@@ -141,24 +140,13 @@ export interface WeatherForecast {
     dt_txt: string;
 }
 
+
+// Type for organizing forecasts by the day of the month with a maximum of 8 forecasts per day
+export type DayOfMonthForecasts = FixedArray<FixedArray<WeatherForecast, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>, 6>;
+
 export interface WeatherResponse {
-    cod: string;
-    message: number;
-    cnt: number;
-    list: WeatherForecast[];
-    city: {
-        id: number;
-        name: string;
-        coord: {
-            lat: number;
-            lon: number;
-        };
-        country: string;
-        population: number;
-        timezone: number;
-        sunrise: number;
-        sunset: number;
-    };
+    current: WeatherForecast;
+    daily: DayOfMonthForecasts;
 }
 
 interface UserState {
@@ -167,9 +155,6 @@ interface UserState {
     setEmailConfirmed: (flag: boolean) => void;
     setHasNewMotivations: (flag: boolean) => void;
 }
-
-// Type for organizing forecasts by the day of the month with a maximum of 8 forecasts per day
-export type DayOfMonthForecasts = FixedArray<FixedArray<WeatherForecast, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>, 6>;
 
 export const mixpanel = new ExpoMixpanelAnalytics(MIXPANEL_API_KEY);
 
@@ -237,6 +222,8 @@ export async function registerForPushNotificationsAsync() {
     return token?.data;
 }
 
+export async function getSetting<T, S extends T = T>(key: string, defaultValue: S): Promise<T | S>
+export async function getSetting<T>(key: string): Promise<T | null>
 export async function getSetting<T>(key: string, defaultValue: T | null = null): Promise<T | null> {
     let value = null;
 
@@ -386,39 +373,6 @@ export function normalizeEmail(email: string | null): string {
 }
 
 /**
- * Build the URL for fetching the weather forecast
- *
- * @param lat
- * @param long
- */
-export function buildForecastUrl(lat: number, long: number) {
-    return `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${long}&APPID=${OPENWEATHER_API_KEY}&units=metric&lang=${getLocales()[0].languageCode}`;
-}
-
-/**
- * Partition the weather forecasts by the day of the month
- *
- * @param response
- */
-export function partitionForecastsByDay(response: WeatherResponse): DayOfMonthForecasts {
-    const forecastsByDay: DayOfMonthForecasts = Array.from({ length: 6 }, () => Array.from({ length: 0 })) as DayOfMonthForecasts;
-    let dayOfMonthIndex: 0 | 1 | 2 | 3 | 4 | 5 = 0;
-
-    response.list.forEach((forecast, index) => {
-        const date = new Date(forecast.dt * 1000); // Convert UNIX timestamp to JavaScript Date
-        const dayOfMonth = date.getDate();
-
-        if (index !== 0 && dayOfMonth !== new Date(response.list[index - 1].dt * 1000).getDate()) {
-            dayOfMonthIndex++;
-        }
-
-        forecastsByDay[dayOfMonthIndex].push(forecast);
-    });
-
-    return forecastsByDay;
-}
-
-/**
  * Get the color for the wind speed
  *
  * @param speed Meter per second
@@ -445,4 +399,37 @@ export function getVisibilityColor(visibility: number): string {
     }
 
     return '#af2222';
+}
+
+export async function fetchWeather(lat: number, long: number): Promise<WeatherResponse> {
+    const lang = getLocales()[0].languageCode;
+    const url = `${API_URL}/weather/forecast?lat=${lat}&long=${long}&lang=${lang}`;
+
+    const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${APP_API_TOKEN}`,
+        },
+    });
+
+    return await response.json() as Promise<WeatherResponse>;
+}
+
+export async function getWeatherImage(lat: number, long: number, studentId: number): Promise<string> {
+    const lang = getLocales()[0].languageCode;
+    const url = `${API_URL}/weather/image?lat=${lat}&long=${long}&lang=${lang}&studentId=${studentId}1`;
+
+    return fetch(url, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${APP_API_TOKEN}`,
+        },
+    }).then(response => response.text())
+
+}
+
+export function hPaToMmhg(hPa: number): number {
+    return Math.round(hPa * 0.75006375541921);
 }

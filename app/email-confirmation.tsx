@@ -3,6 +3,7 @@ import { i18n } from "../lib/i18n";
 import { router, Stack, useLocalSearchParams } from "expo-router";
 import { createRef, useEffect, useRef, useState } from "react";
 import { API_URL, APP_API_TOKEN, HttpResponse, mixpanel, setSetting, showErrorMessage, showSuccessMessage, useUserStore } from "../lib/helpers";
+import * as Haptics from "expo-haptics";
 
 const CONFIRMATION_CODE_DIGITS = 6;
 
@@ -51,6 +52,7 @@ export default function EmailConfirmationPage() {
                             onChangeText={(text) => {
                                 // In case of pasting the code,
                                 if (text.length === CONFIRMATION_CODE_DIGITS) {
+                                    Haptics.selectionAsync();
                                     setCode(text);
                                     refs.current[CONFIRMATION_CODE_DIGITS - 1].current?.focus();
 
@@ -94,6 +96,8 @@ export default function EmailConfirmationPage() {
                                         });
 
                                         if (text) {
+                                            Haptics.selectionAsync();
+
                                             if (index < CONFIRMATION_CODE_DIGITS - 1) {
                                                 refs.current[index + 1].current?.focus();
                                             } else {
@@ -121,6 +125,7 @@ export default function EmailConfirmationPage() {
                             title={i18n.t('confirm_email_code')}
                             disabled={code.length < CONFIRMATION_CODE_DIGITS}
                             onPress={async () => {
+                                Haptics.selectionAsync();
                                 const payload = {
                                     email,
                                     code,
