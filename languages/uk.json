@@ -52,6 +52,8 @@
     "humidity": "Вологість",
     "wind": "Вітер",
     "visibility": "Видимість",
-    "temperature": "Температура"
+    "temperature": "Температура",
+    "pressure": "Тиск",
+    "pressure_mmhg": "мм. рт. ст."
   }
 }

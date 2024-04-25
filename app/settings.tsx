@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert } from 'react-native';
+import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert, ActivityIndicator } from 'react-native';
 import React, { useEffect, useState } from "react";
 import {
     API_URL,
@@ -23,6 +23,7 @@ import Entypo from "@expo/vector-icons/Entypo";
 import { Tooltip } from "@rneui/themed";
 import { getLocales } from "expo-localization";
 import { captureException } from "@sentry/react-native";
+import * as Haptics from "expo-haptics";
 
 interface StudentSettings {
     expoPushToken: string;
@@ -271,236 +272,244 @@ export default function SettingsPage() {
                     title: i18n.t('settings'),
                 }}
             />
-            <View>
-                <Text style={styles.label}>
-                    {i18n.t('your_email')}
-                </Text>
-                <View style={{
-                    flexDirection: 'row',
-                    alignItems   : 'center',
-                }}>
-                    <TextInput
-                        style={{
-                            ...styles.input,
-                            flex       : 4,
-                            textAlign  : emailFocused ? 'right' : 'left',
-                            borderColor: isEmailValid ? 'gray' : 'red',
-                        }}
-                        placeholder={i18n.t('enter_your_email')}
-                        onFocus={() => {
-                            setEmailFocused(true);
-                        }}
-                        onBlur={() => {
-                            setEmailFocused(false);
-                        }}
-                        value={email || undefined}
-                        onChangeText={setEmail}
-                        keyboardType="email-address"
-                    />
-                    <Text style={{...styles.label, marginTop: 8, color: 'grey', fontWeight: '600'}}>
-                        @{CORPORATE_EMAIL_DOMAIN}
-                    </Text>
+            { isLoading ? <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
+                <>
                     <View>
-                        <Tooltip
-                            backgroundColor="#fff"
-                            popover={
-                                <Text>{
-                                    isEmailConfirmed ?
-                                        i18n.t('your_email_is_confirmed') :
-                                        i18n.t('your_email_is_not_confirmed_yet')
-                                }</Text>
-                            }
-                            containerStyle={{
-                                height      : 60,
-                                borderRadius: 7,
-                                borderColor : isEmailConfirmed ? 'green' : 'orange',
-                                borderWidth : 1,
-                                marginTop   : 10,
-                            }}
-                            visible={emailTooltipVisible}
-                            withPointer={false}
-                        >
-                            <View onTouchStart={() => {
-                                setEmailTooltipVisible(true);
-                                setTimeout(() => setEmailTooltipVisible(false), 2000);
+                        <Text style={styles.label}>
+                            {i18n.t('your_email')}
+                        </Text>
+                        <View style={{
+                            flexDirection: 'row',
+                            alignItems   : 'center',
+                        }}>
+                            <TextInput
+                                style={{
+                                    ...styles.input,
+                                    flex       : 4,
+                                    textAlign  : emailFocused ? 'right' : 'left',
+                                    borderColor: isEmailValid ? 'gray' : 'red',
+                                }}
+                                placeholder={i18n.t('enter_your_email')}
+                                onFocus={() => {
+                                    setEmailFocused(true);
+                                }}
+                                onBlur={() => {
+                                    setEmailFocused(false);
+                                }}
+                                value={email || undefined}
+                                onChangeText={setEmail}
+                                keyboardType="email-address"
+                            />
+                            <Text style={{...styles.label, marginTop: 8, color: 'grey', fontWeight: '600'}}>
+                                @{CORPORATE_EMAIL_DOMAIN}
+                            </Text>
+                            <View>
+                                <Tooltip
+                                    backgroundColor="#fff"
+                                    popover={
+                                        <Text>{
+                                            isEmailConfirmed ?
+                                                i18n.t('your_email_is_confirmed') :
+                                                i18n.t('your_email_is_not_confirmed_yet')
+                                        }</Text>
+                                    }
+                                    containerStyle={{
+                                        height      : 60,
+                                        borderRadius: 7,
+                                        borderColor : isEmailConfirmed ? 'green' : 'orange',
+                                        borderWidth : 1,
+                                        marginTop   : 10,
+                                    }}
+                                    visible={emailTooltipVisible}
+                                    withPointer={false}
+                                >
+                                    <View onTouchStart={() => {
+                                        setEmailTooltipVisible(true);
+                                        setTimeout(() => setEmailTooltipVisible(false), 2000);
 
-                                mixpanel.track("Email tooltip opened", {
-                                    emailConfirmed: String(isEmailConfirmed),
-                                });
-                            }}>
-                                <Entypo name={isEmailConfirmed ? 'check' : 'warning'} size={18} color={isEmailConfirmed ? 'green' : 'orange'}/>
+                                        mixpanel.track("Email tooltip opened", {
+                                            emailConfirmed: String(isEmailConfirmed),
+                                        });
+                                    }}>
+                                        <Entypo name={isEmailConfirmed ? 'check' : 'warning'} size={18} color={isEmailConfirmed ? 'green' : 'orange'}/>
+                                    </View>
+                                </Tooltip>
                             </View>
-                        </Tooltip>
+                        </View>
+                        {isEmailValid ?
+                            null :
+                            <Text style={{color: 'red', fontSize: 12, marginHorizontal: 8}}>{i18n.t('invalid_email')}</Text>}
+                        <Text style={{...styles.description, marginTop: 8}}>
+                            {i18n.t('email_description')}
+                        </Text>
+
+                        <Text style={styles.label}>
+                            {i18n.t('your_faculty')}
+                        </Text>
+                        <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholderStyle}
+                            selectedTextStyle={styles.selectedTextStyle}
+                            inputSearchStyle={styles.inputSearchStyle}
+                            iconStyle={styles.iconStyle}
+                            search
+                            autoScroll
+                            data={faculties}
+                            labelField="name"
+                            valueField="id"
+                            value={faculty}
+                            onChange={setFaculty}
+                            placeholder={i18n.t('select_a_faculty')}
+                            renderLeftIcon={() => (
+                                <Text style={styles.icon}>🏫</Text>
+                            )}
+                        />
+
+                        <Text style={styles.label}>
+                            {i18n.t('your_year', {year})}
+                        </Text>
+                        <Slider
+                            minimumValue={1}
+                            maximumValue={5}
+                            step={1}
+                            value={year || undefined}
+                            onValueChange={value => {
+                                Haptics.selectionAsync();
+                                setYear(value);
+                            }}
+                            minimumTrackTintColor="#A41A34"
+                            maximumTrackTintColor="#000000"
+                        />
+
+                        <Text style={styles.label}>
+                            {i18n.t('your_group')}
+                        </Text>
+                        <Dropdown
+                            style={styles.dropdown}
+                            placeholderStyle={styles.placeholderStyle}
+                            selectedTextStyle={styles.selectedTextStyle}
+                            inputSearchStyle={styles.inputSearchStyle}
+                            iconStyle={styles.iconStyle}
+                            search
+                            autoScroll
+                            data={groups}
+                            labelField="name"
+                            valueField="id"
+                            value={group}
+                            onChange={setGroup}
+                            searchField="name"
+                            placeholder={i18n.t('select_a_group')}
+                            renderLeftIcon={() => (
+                                <Text style={styles.icon}>👥</Text>
+                            )}
+                        />
+                        <View style={styles.checkboxContainer} onTouchStart={() => {
+                            setEnableNotifications(!enableNotifications);
+                        }}>
+                            <Checkbox
+                                value={enableNotifications}
+                                style={styles.checkbox}
+                            />
+                            <Text style={styles.label}>
+                                {i18n.t('receive_notifications')}
+                            </Text>
+                        </View>
+                        <Text style={styles.description}>
+                            {i18n.t('receive_notifications_description')}
+                        </Text>
                     </View>
-                </View>
-                {isEmailValid ?
-                    null :
-                    <Text style={{color: 'red', fontSize: 12, marginHorizontal: 8}}>{i18n.t('invalid_email')}</Text>}
-                <Text style={{...styles.description, marginTop: 8}}>
-                    {i18n.t('email_description')}
-                </Text>
 
-                <Text style={styles.label}>
-                    {i18n.t('your_faculty')}
-                </Text>
-                <Dropdown
-                    style={styles.dropdown}
-                    placeholderStyle={styles.placeholderStyle}
-                    selectedTextStyle={styles.selectedTextStyle}
-                    inputSearchStyle={styles.inputSearchStyle}
-                    iconStyle={styles.iconStyle}
-                    search
-                    autoScroll
-                    data={faculties}
-                    labelField="name"
-                    valueField="id"
-                    value={faculty}
-                    onChange={setFaculty}
-                    placeholder={i18n.t('select_a_faculty')}
-                    renderLeftIcon={() => (
-                        <Text style={styles.icon}>🏫</Text>
-                    )}
-                />
+                    <Button
+                        title={isEmailConfirmed ? i18n.t('save_settings') : i18n.t('confirm_email')}
+                        disabled={saveIsDisabled}
+                        onPress={async () => {
+                            Haptics.selectionAsync();
+                            await setSetting('faculty', faculty);
+                            await setSetting('year', year || 0);
+                            await setSetting('group', group);
+                            await setSetting('email', email);
+                            await setSetting('enableNotifications', enableNotifications);
 
-                <Text style={styles.label}>
-                    {i18n.t('your_year', {year})}
-                </Text>
-                <Slider
-                    minimumValue={1}
-                    maximumValue={5}
-                    step={1}
-                    value={year || undefined}
-                    onValueChange={setYear}
-                    minimumTrackTintColor="#A41A34"
-                    maximumTrackTintColor="#000000"
-                />
+                            setPrevEmail(email);
 
-                <Text style={styles.label}>
-                    {i18n.t('your_group')}
-                </Text>
-                <Dropdown
-                    style={styles.dropdown}
-                    placeholderStyle={styles.placeholderStyle}
-                    selectedTextStyle={styles.selectedTextStyle}
-                    inputSearchStyle={styles.inputSearchStyle}
-                    iconStyle={styles.iconStyle}
-                    search
-                    autoScroll
-                    data={groups}
-                    labelField="name"
-                    valueField="id"
-                    value={group}
-                    onChange={setGroup}
-                    searchField="name"
-                    placeholder={i18n.t('select_a_group')}
-                    renderLeftIcon={() => (
-                        <Text style={styles.icon}>👥</Text>
-                    )}
-                />
-                <View style={styles.checkboxContainer} onTouchStart={() => {
-                    setEnableNotifications(!enableNotifications);
-                }}>
-                    <Checkbox
-                        value={enableNotifications}
-                        style={styles.checkbox}
-                    />
-                    <Text style={styles.label}>
-                        {i18n.t('receive_notifications')}
-                    </Text>
-                </View>
-                <Text style={styles.description}>
-                    {i18n.t('receive_notifications_description')}
-                </Text>
-            </View>
+                            const normalizedEmail = normalizeEmail(email);
 
-            <Button
-                title={isEmailConfirmed ? i18n.t('save_settings') : i18n.t('confirm_email')}
-                disabled={saveIsDisabled}
-                onPress={async () => {
-                    await setSetting('faculty', faculty);
-                    await setSetting('year', year || 0);
-                    await setSetting('group', group);
-                    await setSetting('email', email);
-                    await setSetting('enableNotifications', enableNotifications);
+                            const payload: StudentSettings | StudentSettingsDB = {
+                                expoPushToken: expoPushToken || "",
+                                year         : year || 1,
+                                email        : normalizedEmail,
+                                facultyId    : faculty?.id || 0,
+                                groupId      : group?.id || 0,
+                                locale       : i18n.locale,
+                                deviceLocale : getLocales()[0].languageCode,
+                                enableNotifications,
+                            }
 
-                    setPrevEmail(email);
+                            if (studentId) {
+                                (payload as StudentSettingsDB).id = studentId;
+                            }
 
-                    const normalizedEmail = normalizeEmail(email);
+                            try {
+                                const student = await fetch(`${API_URL}/students`, {
+                                    method : studentId ? 'PUT' : 'POST',
+                                    headers: {
+                                        'Content-Type' : 'application/json',
+                                        'Authorization': `Bearer ${APP_API_TOKEN}`,
+                                    },
+                                    body   : JSON.stringify(payload),
+                                })
+                                    .then(response => response.json() as Promise<StudentSettingsResponse>)
+                                    .then(response => {
+                                        if ('message' in response) {
+                                            const message = Array.isArray(response.message) ? response.message : [response.message];
+                                            throw new Error(message.join('\n'));
+                                        }
 
-                    const payload: StudentSettings | StudentSettingsDB = {
-                        expoPushToken: expoPushToken || "",
-                        year         : year || 1,
-                        email        : normalizedEmail,
-                        facultyId    : faculty?.id || 0,
-                        groupId      : group?.id || 0,
-                        locale       : i18n.locale,
-                        deviceLocale : getLocales()[0].languageCode,
-                        enableNotifications,
-                    }
+                                        return response?.student;
+                                    });
 
-                    if (studentId) {
-                        (payload as StudentSettingsDB).id = studentId;
-                    }
+                                mixpanel.identify(String(student.id));
+                                mixpanel.people_set({
+                                    $email      : student.email,
+                                    $created    : student.createdAt,
+                                    faculty     : faculty?.name || "",
+                                    group       : group?.name || "",
+                                    year        : String(year),
+                                    locale      : i18n.locale,
+                                    deviceLocale: getLocales()[0].languageCode,
+                                });
+                                mixpanel.track("Settings saved", {
+                                    enableNotifications: String(enableNotifications),
+                                });
 
-                    try {
-                        const student = await fetch(`${API_URL}/students`, {
-                            method : studentId ? 'PUT' : 'POST',
-                            headers: {
-                                'Content-Type' : 'application/json',
-                                'Authorization': `Bearer ${APP_API_TOKEN}`,
-                            },
-                            body   : JSON.stringify(payload),
-                        })
-                            .then(response => response.json() as Promise<StudentSettingsResponse>)
-                            .then(response => {
-                                if ('message' in response) {
-                                    const message = Array.isArray(response.message) ? response.message : [response.message];
-                                    throw new Error(message.join('\n'));
+                                setEmailConfirmed(student.emailConfirmed);
+
+                                await setSetting('emailConfirmed', student.emailConfirmed);
+                                await setSetting('studentId', student.id);
+                                await setSetting('student', student);
+
+                                showSuccessMessage(i18n.t('settings_saved'));
+
+                                if (!student.emailConfirmed) {
+                                    router.push({
+                                        pathname: '/email-confirmation',
+                                        params  : {
+                                            email: normalizedEmail,
+                                        },
+                                    });
+                                } else if (router.canGoBack()) {
+                                    router.back();
+                                } else {
+                                    router.replace('/');
                                 }
-
-                                return response?.student;
-                            });
-
-                        mixpanel.identify(String(student.id));
-                        mixpanel.people_set({
-                            $email      : student.email,
-                            $created    : student.createdAt,
-                            faculty     : faculty?.name || "",
-                            group       : group?.name || "",
-                            year        : String(year),
-                            locale      : i18n.locale,
-                            deviceLocale: getLocales()[0].languageCode,
-                        });
-                        mixpanel.track("Settings saved", {
-                            enableNotifications: String(enableNotifications),
-                        });
-
-                        setEmailConfirmed(student.emailConfirmed);
-
-                        await setSetting('emailConfirmed', student.emailConfirmed);
-                        await setSetting('studentId', student.id);
-                        await setSetting('student', student);
-
-                        showSuccessMessage(i18n.t('settings_saved'));
-
-                        if (!student.emailConfirmed) {
-                            router.push({
-                                pathname: '/email-confirmation',
-                                params  : {
-                                    email: normalizedEmail,
-                                },
-                            });
-                        } else if (router.canGoBack()) {
-                            router.back();
-                        } else {
-                            router.replace('/');
-                        }
-                    } catch (e: any) {
-                        captureException(e);
-                        showErrorMessage(i18n.t(`errors.${e.message}`));
-                    }
-                }}
-            />
+                            } catch (e: any) {
+                                captureException(e);
+                                showErrorMessage(i18n.t(`errors.${e.message}`));
+                            }
+                        }}
+                    />
+                </>
+            }
         </View>
     )
 }
