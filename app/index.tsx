@@ -70,8 +70,10 @@ export default function IndexPage() {
                 setUser({id: storedStudent.id.toString()});
                 mixpanel.identify(String(storedStudent.id));
 
-                await fetchMotivations(storedStudent.id);
-                await fetchData(storedStudent.group.id);
+                await Promise.all([
+                    fetchData(storedStudent.group.id),
+                    fetchMotivations(storedStudent.id),
+                ]);
             }
 
             setLoading(false);
