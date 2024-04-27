@@ -11,6 +11,8 @@ import { Table, Row } from 'react-native-reanimated-table';
 import PagerView from "react-native-pager-view";
 import { captureException, setUser } from "@sentry/react-native";
 import * as Haptics from 'expo-haptics';
+import ModalWindow from "../lib/ModalWindow";
+import EventList from "../components/eventList";
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -37,6 +39,7 @@ export default function IndexPage() {
     const [motivationPagerHeights, setMotivationPagerHeights] = useState<Map<number, number>>(new Map());
     const [student, setStudent] = useState<StudentSettingsDB | null>(null);
     const {hasNewMotivations, setHasNewMotivations} = useUserStore();
+    const [isModalVisible, setIsModalVisible] = useState(false);
 
     async function fetchData(groupId: number, forceRefresh = false) {
         setLoading(true);
@@ -59,6 +62,14 @@ export default function IndexPage() {
             captureException(e);
             mixpanel.track('Motivations fetch failed');
         }
+    }
+
+    function onModalClose() {
+        setIsModalVisible(false);
+    }
+
+    function onShowModal() {
+        setIsModalVisible(true);
     }
 
     useEffect(() => {
@@ -137,6 +148,14 @@ export default function IndexPage() {
                 {
                     appIsReady ?
                         <>
+                            <ModalWindow
+                                title="Афіша заходів, Луцьк"
+                                isVisible={isModalVisible}
+                                onClose={onModalClose}
+                                children={
+                                    <EventList/>
+                                }
+                            />
                             {motivations.length ? (
                                 <View style={styles.motivationPagerClone}>
                                     {motivations.map((motivation, index) => (
@@ -279,7 +298,12 @@ export default function IndexPage() {
                                     </ScrollView> :
                                     loading ?
                                         <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/> :
-                                        <Text style={{textAlign: 'center', fontSize: 16, marginTop: 122}}>{i18n.t('no_data')}</Text>
+                                        <View style={{gap: 5}}>
+                                            <Text style={styles.noData}>{i18n.t('no_data')}</Text>
+                                            <TouchableOpacity onPress={onShowModal}>
+                                                <Text style={styles.showEventsButton}>Переглянути місцеві заходи</Text>
+                                            </TouchableOpacity>
+                                        </View>
                             }
                         </> : <ActivityIndicator size="large" color="#A41A34" style={{marginTop: 122}}/>
                 }
@@ -377,4 +401,14 @@ const styles = StyleSheet.create({
         padding        : 6,
         backgroundColor: 'transparent',
     },
+    noData: {
+        textAlign: 'center',
+        fontSize: 16,
+        marginTop: 122,
+    },
+    showEventsButton: {
+        textAlign: 'center',
+        color: '#0095ff',
+        fontSize: 14,
+    }
 });

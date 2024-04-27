@@ -26,7 +26,8 @@
   "today": "Today",
   "tomorrow": "Tomorrow",
   "loading": "Loading...",
-  "no_data": "No classes for this day! Time to relax :)",
+  "no_data": "No classes for this day!",
+  "no_events": "No upcoming events found",
   "reset_settings_warning": {
     "title": "Reset settings",
     "message": "Are you sure you want to reset your settings?",
