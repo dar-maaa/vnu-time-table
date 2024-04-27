@@ -2,7 +2,7 @@ import { Redirect, Stack, router } from 'expo-router';
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { i18n } from "../lib/i18n";
 import { JSXElementConstructor, ReactElement, ReactNode, ReactPortal, useEffect, useState } from "react";
-import { fetchStudentMotivations, fetchTimetable, getSetting, Group, mixpanel, Motivation, useUserStore } from "../lib/helpers";
+import { fetchStudentMotivations, fetchTimetable, getSetting, mixpanel, Motivation, StudentSettingsDB, useUserStore } from "../lib/helpers";
 import Entypo from "@expo/vector-icons/Entypo";
 import Material from "@expo/vector-icons/MaterialIcons";
 import CalendarStrip from 'react-native-calendar-strip';
@@ -31,12 +31,11 @@ export default function IndexPage() {
     const [selectedDate, setSelectedDate] = useState<moment.Moment>(moment());
     const [table, setTable] = useState<string[][]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [userGroupId, setUserGroupId] = useState<number | null>(null);
     const [refreshing, setRefreshing] = useState(false);
     const [motivations, setMotivations] = useState<Motivation[]>([]);
     const [motivationPagerHeight, setMotivationPagerHeight] = useState(0);
     const [motivationPagerHeights, setMotivationPagerHeights] = useState<Map<number, number>>(new Map());
-    const [studentId, setStudentId] = useState<number | null>(null);
+    const [student, setStudent] = useState<StudentSettingsDB | null>(null);
     const {hasNewMotivations, setHasNewMotivations} = useUserStore();
 
     async function fetchData(groupId: number, forceRefresh = false) {
@@ -64,21 +63,15 @@ export default function IndexPage() {
 
     useEffect(() => {
         async function prepare() {
-            const group = await getSetting<Group>('group');
+            const storedStudent = await getSetting<StudentSettingsDB>('student');
 
-            if (group?.id) {
-                setUserGroupId(group.id);
-                await fetchData(group.id);
-            }
+            if (storedStudent?.id) {
+                setStudent(storedStudent);
+                setUser({id: storedStudent.id.toString()});
+                mixpanel.identify(String(storedStudent.id));
 
-            const studentId = await getSetting<number>('studentId');
-
-            setUser({id: studentId?.toString()});
-
-            if (studentId) {
-                setStudentId(studentId);
-                mixpanel.identify(String(studentId));
-                await fetchMotivations(studentId);
+                await fetchMotivations(storedStudent.id);
+                await fetchData(storedStudent.group.id);
             }
 
             setLoading(false);
@@ -89,20 +82,20 @@ export default function IndexPage() {
     }, []);
 
     useEffect(() => {
-        if (hasNewMotivations && studentId) {
-            fetchMotivations(studentId);
+        if (hasNewMotivations && student) {
+            fetchMotivations(student.id);
         }
     }, [hasNewMotivations]);
 
     useEffect(() => {
-        if (!userGroupId) {
+        if (!student?.group?.id) {
             return;
         }
 
-        fetchData(userGroupId).then(() => {
+        fetchData(student?.group?.id).then(() => {
             setLoading(false);
         });
-    }, [selectedDate, userGroupId]);
+    }, [selectedDate]);
 
     moment.locale(i18n.locale);
 
@@ -115,13 +108,13 @@ export default function IndexPage() {
     }];
 
     // If user group is set and app is ready, track the event
-    if (userGroupId && appIsReady) {
+    if (student?.group?.id && appIsReady) {
         mixpanel.track('Timetable viewed', {date: selectedDate.format('YYYY-MM-DD')});
     }
 
 
     return (
-        !userGroupId && appIsReady ? <Redirect href="settings"/> :
+        !student?.group?.id && appIsReady ? <Redirect href="settings"/> :
             <>
                 <Stack.Screen
                     options={{
@@ -244,8 +237,8 @@ export default function IndexPage() {
                                                     setRefreshing(true);
 
                                                     mixpanel.track('Timetable refreshed', {date: selectedDate.format('YYYY-MM-DD')});
-                                                    if (userGroupId) {
-                                                        await fetchData(userGroupId, true);
+                                                    if (student?.group?.id) {
+                                                        await fetchData(student?.group?.id, true);
                                                     }
 
                                                     setRefreshing(false);

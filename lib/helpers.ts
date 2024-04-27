@@ -18,9 +18,11 @@ import {
 import { getLocales } from "expo-localization";
 import { captureException } from "@sentry/react-native";
 import { isDevice } from "expo-device";
+import * as Haptics from "expo-haptics";
 
 export const DEV_EMAILS = ['serhii_dev', 'serhii', 'serhii_mac', 'dasha'];
 export const DEV_EMAIL_WITH_DOMAIN = '@matrunchyk.com';
+export const DEV_NAME = 'Dariia Matrunchyk';
 
 export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
@@ -74,18 +76,23 @@ export interface Motivation {
     createdAt: string;
 }
 
-export interface Student {
-    id: number;
+export interface StudentSettings {
     expoPushToken: string;
-    email: string;
-    faculty: Faculty;
     year: number;
-    group: Group;
+    email: string;
+    facultyId: number;
+    groupId: number;
     locale: string;
-    deviceLocale: string;
-    emailConfirmed: boolean;
+    deviceLocale: string | null;
     enableNotifications: boolean;
-    motivations: Motivation[];
+}
+
+export interface StudentSettingsDB extends StudentSettings {
+    id: number;
+    emailConfirmed: boolean;
+    createdAt: string;
+    faculty: Faculty;
+    group: Group;
 }
 
 // Interfaces for the weather data structure
@@ -330,6 +337,7 @@ export async function fetchStudentMotivations(studentId: number): Promise<Motiva
  * @param message
  */
 export function showErrorMessage(message: string) {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     Toast.show(message, {
         duration: Toast.durations.LONG * 2,
         position: Toast.positions.BOTTOM,
@@ -347,6 +355,7 @@ export function showErrorMessage(message: string) {
  * @param message
  */
 export function showSuccessMessage(message: string) {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Toast.show(message, {
         duration: Toast.durations.LONG,
         keyboardAvoiding: true,
