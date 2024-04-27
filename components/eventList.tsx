@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, Linking } from "react-native";
 import { fetchEvents, mixpanel } from "../lib/helpers";
 import { useEffect, useState } from "react";
 import { Event } from "../lib/helpers";
@@ -22,20 +22,25 @@ export default function EventList() {
     }, []);
 
     const EventItem = ({event}: { event: Event }) => (
-        <View style={styles.event}>
-            <View>
-                <Image source={{uri: event.imageUrl}} style={styles.image}/>
-            </View>
-            <View style={styles.info}>
+        <TouchableOpacity onPress={() => {
+            mixpanel.track('ClickEvent', {event});
+            Linking.openURL(event.url);
+        }}>
+            <View style={styles.event}>
                 <View>
-                    <Text style={styles.date}>{moment(event.date, 'DD.MM.YYYY H:mm').format('DD MMMM YYYY H:mm, ddd')}</Text>
-                    <Text style={styles.name}>{event.name}</Text>
+                    <Image source={{uri: event.imageUrl}} style={styles.image}/>
                 </View>
-                <View>
-                    <Text>{event.city}, {event.venue}</Text>
+                <View style={styles.info}>
+                    <View>
+                        <Text style={styles.date}>{moment(event.date, 'DD.MM.YYYY H:mm').format('DD MMMM YYYY H:mm, ddd')}</Text>
+                        <Text style={styles.name}>{event.name}</Text>
+                    </View>
+                    <View>
+                        <Text style={{textTransform: 'uppercase', fontSize: 10}}>{event.city}, {event.venue}</Text>
+                    </View>
                 </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 
     return (
@@ -62,14 +67,14 @@ const styles = StyleSheet.create({
         width       : '100%',
         padding     : 10,
         gap         : 10,
-        marginBottom: 20,
+        marginBottom: 40,
     },
-    noEvents: {
+    noEvents : {
         textAlign: 'center',
         fontSize : 16,
         color    : '#666',
-        alignSelf : 'center',
-        marginTop : 50,
+        alignSelf: 'center',
+        marginTop: 50,
     },
     event    : {
         flexDirection: 'row',
