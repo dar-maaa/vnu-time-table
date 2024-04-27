@@ -56,8 +56,8 @@ export default function WeatherPage() {
         setSixDayForecast(forecast.daily);
         setCurrentWeather(forecast.current);
 
-        // const studentId = await getSetting<number>('studentId', 0);
-        // getWeatherImage(location.coords.latitude, location.coords.longitude, studentId)
+        // const student = await getSetting<StudentSettingsDB>('student');
+        // getWeatherImage(location.coords.latitude, location.coords.longitude, student?.id || 0)
         //     .then(s => setWeatherImage(s))
         //     .catch((e: any) => {
         //         setWeatherImage('');
