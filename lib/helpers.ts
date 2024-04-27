@@ -166,6 +166,7 @@ interface UserState {
 
 export interface Event {
     id: string;
+    url: string;
     name: string;
     price: string;
     imageUrl: string;
