@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Button, TextInput, Keyboard, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
 import React, { useEffect, useState } from "react";
 import {
     API_URL,
@@ -13,7 +13,7 @@ import {
     setSetting,
     showErrorMessage,
     showSuccessMessage,
-    normalizeEmail, useUserStore, mixpanel, StudentSettingsDB, StudentSettings, DEV_NAME,
+    normalizeEmail, useUserStore, mixpanel, StudentSettingsDB, StudentSettings, DEV_NAME, DEV_URL,
 } from "../lib/helpers";
 import { Dropdown } from "react-native-element-dropdown";
 import Slider from '@react-native-community/slider';
@@ -24,6 +24,7 @@ import { Tooltip } from "@rneui/themed";
 import { getLocales } from "expo-localization";
 import { captureException } from "@sentry/react-native";
 import * as Haptics from "expo-haptics";
+import * as Linking from 'expo-linking';
 
 interface StudentSettingsResponse {
     student: StudentSettingsDB;
@@ -362,9 +363,16 @@ export default function SettingsPage() {
                         <Text style={styles.description}>
                             {i18n.t('receive_notifications_description')}
                         </Text>
-                        <Text style={styles.copyright}>
-                            {DEV_NAME} © {new Date().getFullYear()}
-                        </Text>
+                        <View style={styles.copyrightWrapper}>
+                            <TouchableOpacity onPress={() => Linking.openURL(DEV_URL)}>
+                                <View style={{borderBottomWidth: 1, borderBottomColor: '#ddd'}}>
+                                    <Text style={styles.copyright}>
+                                        {DEV_NAME}
+                                    </Text>
+                                </View>
+                            </TouchableOpacity>
+                            <Text style={styles.copyright}>© {new Date().getFullYear()}</Text>
+                        </View>
                     </View>
 
                     <Button
@@ -516,10 +524,14 @@ const styles = StyleSheet.create({
     checkbox         : {
         marginTop: 20,
     },
-    copyright: {
+    copyrightWrapper : {
+        justifyContent: 'center',
+        flexDirection: 'row',
         marginTop: 40,
+        gap: 3,
+    },
+    copyright: {
         fontSize: 12,
         color: 'gray',
-        textAlign: 'center',
-    }
+    },
 });

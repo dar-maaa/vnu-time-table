@@ -26,7 +26,7 @@
   "today": "Today",
   "tomorrow": "Tomorrow",
   "loading": "Loading...",
-  "no_data": "No data",
+  "no_data": "No classes for this day! Time to relax :)",
   "reset_settings_warning": {
     "title": "Reset settings",
     "message": "Are you sure you want to reset your settings?",

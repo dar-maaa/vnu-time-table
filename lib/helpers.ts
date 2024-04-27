@@ -23,6 +23,7 @@ import * as Haptics from "expo-haptics";
 export const DEV_EMAILS = ['serhii_dev', 'serhii', 'serhii_mac', 'dasha'];
 export const DEV_EMAIL_WITH_DOMAIN = '@matrunchyk.com';
 export const DEV_NAME = 'Dariia Matrunchyk';
+export const DEV_URL = 'https://www.instagram.com/dddarkasss/';
 
 export const APP_API_TOKEN = 'y8WlGioq7br6pxrlafCepb0y2DYJDZt1E3cs3QbuHL2F3b7FQ40j3RuUIgh9HR5xUfmQv30p5AiCyUysisE05lHw4ZLwSKVf6Pa0';
 export const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://vnu-time-table.digitalidea.ua/api/v1';
