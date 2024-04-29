@@ -40,3 +40,5 @@ yarn-error.*
 
 /google-services.json
 /vnu-time-table-play-service-account.json
+build-*.ipa
+build-*.apk

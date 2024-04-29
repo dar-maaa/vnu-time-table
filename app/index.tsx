@@ -13,6 +13,7 @@ import { captureException, setUser } from "@sentry/react-native";
 import * as Haptics from 'expo-haptics';
 import ModalWindow from "../lib/ModalWindow";
 import EventList from "../components/eventList";
+import * as Sentry from '@sentry/react-native';
 
 function HeaderTitle(props: {
     children: string | number | boolean | ReactElement<any, string | JSXElementConstructor<any>> | Iterable<ReactNode> | ReactPortal | null | undefined;
@@ -110,7 +111,11 @@ export default function IndexPage() {
         });
     }, [selectedDate]);
 
-    moment.locale(i18n.locale);
+    try {
+        moment.locale(i18n.locale);
+    } catch (e) {
+        Sentry.captureException(e);
+    }
 
     const minDate = moment().subtract(1, 'month');
     const maxDate = moment().add(1, 'month');

@@ -21,6 +21,7 @@ import {
     LocationGeocodedAddress,
 } from "expo-location";
 import * as Haptics from "expo-haptics";
+import * as Sentry from "@sentry/react-native";
 
 const REFRESH_INTERVAL = 1000 * 60 * 60; // 1 hour
 
@@ -32,7 +33,11 @@ export default function WeatherPage() {
     const [currentWeather, setCurrentWeather] = useState<WeatherForecast>();
     // const [weatherImage, setWeatherImage] = useState<string>('');
 
-    moment.locale(i18n.locale);
+    try {
+        moment.locale(i18n.locale);
+    } catch (e) {
+        Sentry.captureException(e);
+    }
 
     async function prepare() {
         setLoading(true);
