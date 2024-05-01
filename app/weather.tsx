@@ -88,7 +88,7 @@ export default function WeatherPage() {
 
     if (region?.length) {
         mixpanel.people_set({
-            city   : region[0].city,
+            $city  : region[0].city,
             country: region[0].country,
         });
         mixpanel.track('Weather page viewed');
