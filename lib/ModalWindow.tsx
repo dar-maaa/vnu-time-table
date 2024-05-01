@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     },
     titleContainer: {
         paddingVertical: 10,
-        backgroundColor: '#464C55',
+        backgroundColor: '#15237A',
         borderTopRightRadius: 10,
         borderTopLeftRadius: 10,
         paddingHorizontal: 20,
