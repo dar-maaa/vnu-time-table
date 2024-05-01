@@ -34,6 +34,11 @@
       "android": {
         "serviceAccountKeyPath": "vnu-time-table-play-service-account.json",
         "track": "internal"
+      },
+      "ios": {
+        "appleId": "sergiy.matrunchyk@gmail.com",
+        "ascAppId": "6478240287",
+        "appleTeamId": "A6R6EV6YP7"
       }
     }
   }
