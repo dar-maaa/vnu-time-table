@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     noEvents : {
         textAlign: 'center',
         fontSize : 16,
-        color    : '#666',
+        color    : '#15237A',
         alignSelf: 'center',
         marginTop: 50,
     },
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     },
     date     : {
         fontSize: 12,
-        color   : '#666',
+        color   : '#15237A',
     },
     name     : {
         marginTop : 5,
